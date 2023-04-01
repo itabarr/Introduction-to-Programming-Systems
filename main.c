@@ -13,16 +13,15 @@
 // function declarations
 void print_prompt(void);
 void read_command(char *cmd);
-void exit_program(int *run, char *cmd);
+void exit_program(int *run, char *cmd, process_manager *ph);
 void change_directory(char *cmd);
-void parse_command(char *cmd, char *args[]);
+void parse_command(char *cmd, char *args[], int *is_background, int *is_internal);
 int is_internal_command(char *cmd);
-int is_background_command(char *cmd);
-void run_process(char *args[], int is_background);
-
+int is_background_command(char *last_arg);
+void run_external_process(char *args[], int is_background, process_manager *ph);
 // void handle_background(char *cmd); 
 
-int main(void) {
+int main() {
     int run = 1;
     char cmd[MAX_LINE];
     char *args[MAX_ARGS];
@@ -34,15 +33,16 @@ int main(void) {
 
     while (run) {
         print_prompt(); 
+
         read_command(cmd);
+        parse_command(cmd, args, &is_background, &is_internal);
+
+        run_external_process(args, is_background , ph);
         
-        is_internal = is_internal_command(args[0]);
-        is_background = is_background_command(cmd);
+        //print_process_manager(ph);
+        update_process_manager(ph);
 
-        parse_command(cmd, args);
-
-        run_process(args, is_background);
-        exit_program(&run, cmd);
+        exit_program(&run, cmd, ph);
         change_directory(cmd); 
     }
 
@@ -61,7 +61,7 @@ void read_command(char *cmd) {
 }
 
 // parse command into arguments
-void parse_command(char *cmd, char *args[]) {
+void parse_command(char *cmd, char *args[] , int *is_background, int *is_internal) {
     char separator[] = " ";
     char *parsed_cmd;
     int i = 0;
@@ -73,6 +73,14 @@ void parse_command(char *cmd, char *args[]) {
         i++;
     }
     args[i] = NULL;
+
+    *is_background = is_background_command(args[i-1]);
+    *is_internal = is_internal_command(args[0]);
+
+    // remove the & from the args if it is a background command
+    if (*is_background) {
+        args[i - 1] = NULL;
+    }
 }
 
 // checks if command is a internal command
@@ -83,19 +91,21 @@ int is_internal_command(char *cmd) {
     return 0;
 }
 
-// checks if command is a background command 
-int is_background_command(char *cmd) {
-    if (cmd[strlen(cmd) - 1] == '&') {
+// check if is a background command given the last string argument 
+int is_background_command(char *last_arg) {
+    if (strcmp(last_arg, "&") == 0){
         return 1;
     }
     return 0;
 }
 
 // checks if user typed exit command
-void exit_program(int *run, char *cmd) {
+void exit_program(int *run, char *cmd , process_manager *ph) {
     if (strcmp(cmd, "exit") == 0) {
         *run = 0;
+        free_process_manager(ph);
     }
+    
 }
 
 // changes the directory if command is cd
@@ -119,24 +129,51 @@ void change_directory(char *cmd){
 return;
 }
 
-// run process with fork and execvp
-void run_process(char *args[], int is_background, process_manager *ph) {
-    pid_t pid = fork();
+//run external process with fork and execvp
+void run_external_process(char *args[], int is_background, process_manager *ph) {
+    pid_t pid;
+    int status;
+    int is_process_added;
+    
+    if (is_background && is_full(ph)){
+        printf("hw1shell: too many background commands running\n");
+        return;
+
+    }
+
+    pid = fork();
+
     if (pid == 0) {
-        // Child process
+        
+        if (is_background){
+            printf("\nchild: pid %d started\n", getpid());
+            
+            //print process manager before adding process
+
+            is_process_added = add_process(ph, getpid(), 1);
+
+            //print process manager pointer after adding process
+            printf("pm pointer: %p\n", ph);
+        }
+
         execvp(args[0], args);
+
+        if (is_background){
+            update_process_status(ph, getpid(), 0);
+        }
+
         perror("execvp() failed");
         exit(1);
+
     } else if (pid > 0) {
         // Parent process
         if (!is_background) {
-            wait(NULL);
-            printf("Child process finished\n"); 
+            // print pid of child process
+            waitpid(pid, &status, 0); 
         }
-        
-        else{ 
-            add_process(ph, pid, 1);
-            printf("Child process finished\n");
+
+        else{
+            printf("hw1shell: pid %d started\n", pid);
         }
        
     } else {
@@ -145,6 +182,5 @@ void run_process(char *args[], int is_background, process_manager *ph) {
         exit(1);
     }
 }
-
 
 

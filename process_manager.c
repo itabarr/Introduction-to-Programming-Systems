@@ -4,22 +4,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-int main() {
-    process_manager* pm = create_process_manager();
-
-    // add some processes
-    add_process(pm, 1000, 1);
-    add_process(pm, 2000, 1);
-
-    // remove a process
-    int removed = remove_process(pm, 1000);
-    printf("Removed process 1000: %d\n", removed);
+#include <sys/wait.h>
 
 
-    free_process_manager(pm);
-    return 0;
-}
+// Test code
+// int main() {
+//     process_manager* pm = create_process_manager();
+
+//     // add some processes
+//     add_process(pm, 1000, 1);
+//     add_process(pm, 2000, 1);
+
+//     // remove a process
+//     int removed = remove_process(pm, 1000);
+//     printf("Removed process 1000: %d\n", removed);
+
+
+//     free_process_manager(pm);
+//     return 0;
+// }
 
 // create process manager
 process_manager *create_process_manager() {
@@ -39,6 +42,11 @@ void free_process_manager(process_manager *ph) {
     free(ph);
 }
 
+//check if process manager is full
+int is_full(process_manager *ph) {
+    return ph->num_processes == MAX_PROCESSES;
+}
+
 // add process to process manager and return 1 if successful, 0 if not 
 int add_process(process_manager *ph, int pid, int status) {
     if (ph->num_processes < MAX_PROCESSES) {
@@ -55,59 +63,47 @@ int add_process(process_manager *ph, int pid, int status) {
     return 0;
 }
 
-// remove process from process manager and return 1 if successful, 0 if not
-int remove_process(process_manager *ph, int pid) {
-    int i;
-    for (i = 0; i < ph->num_processes; i++) {
-        if (ph->processes[i].pid == pid) {
-            ph->processes[i].pid = -1;
-            ph->processes[i].status = -1;
-            ph->num_processes--;
-            return 1;
-        }
+//remove process by index and return 1 if successful, 0 if not
+int remove_process_by_index(process_manager *ph, int index) {
+    if (index < MAX_PROCESSES) {
+        ph->processes[index].pid = -1;
+        ph->processes[index].status = -1;
+        ph->num_processes--;
+        return 1;
     }
     return 0;
 }
 
-
-// get process status by pid from linux /proc filesystem
-int get_process_status(int pid) {
-    char path[100];
-    sprintf(path, "/proc/%d/status", pid);
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL) {
-        return -1;
-    }
-
-    char line[100];
-    while (fgets(line, 100, fp) != NULL) {
-        if (strncmp(line, "State:", 6) == 0) {
-            fclose(fp);
-            return line[7];
+// remove a process from process manager if it's in zombie state, and print its pid
+void update_process_manager(process_manager *ph) {
+    int i;
+    int status;
+    int res;
+    for (i = 0; i < ph->num_processes; i++) {
+        // if process state is zombie, remove it and print hw1shell: pid %d finished
+        if (ph->processes[i].status == 0) {
+            res = remove_process_by_index(ph, i);
+            if (res == 1) {
+                printf("hw1shell: pid %d finished\n", ph->processes[i].pid);
+            }
         }
     }
-
-    fclose(fp);
-    return -1;
 }
 
-// get all processes child pids from linux /proc filesystem
-int *get_child_pids(int pid) {
-    char path[100];
-    sprintf(path, "/proc/%d/task/%d/children", pid, pid);
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL) {
-        return NULL;
+// print process manager
+void print_process_manager(process_manager *ph) {
+    printf("Number of processes: %d\n", ph->num_processes);
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        printf("Process %d: pid = %d, status = %d\n", i, ph->processes[i].pid, ph->processes[i].status);
     }
-
-    int *pids = malloc(sizeof(int) * 100);
-    int i = 0;
-    char line[100];
-    while (fgets(line, 100, fp) != NULL) {
-        pids[i] = atoi(line);
-        i++;
-    }
-
-    fclose(fp);
-    return pids;
 }
+
+// update process status
+void update_process_status(process_manager *ph, int pid, int status) {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (ph->processes[i].pid == pid) {
+            ph->processes[i].status = status;
+        }
+    }
+}
+
