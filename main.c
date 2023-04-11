@@ -10,6 +10,10 @@
 #define MAX_ARGS 64
 #define MAX_PROCESSES 4
 
+// TODO : handle redirection in internal commands
+// TODO : ask frumkis to do tests
+// TODO : check for edge cases
+
 // function declarations
 void print_prompt(void);
 void read_command(char *cmd , char *parsed_cmd);
