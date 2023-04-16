@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 #include "process_manager.h"
 
 #define MAX_LINE 1024
@@ -163,8 +164,7 @@ void change_directory(char *cmd , char *args[]){
         {
             result = chdir(args[1]);
             if (result == -1) {
-                printf("hw1shell: invalid command\n");
-
+                fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
             }
         }
     
@@ -226,7 +226,8 @@ void run_external_process(char cmd[], char *args[], int is_background, process_m
         }
         
         execvp(args[0], args);
-        perror("hw1shell: invalid command");
+        fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
+        printf("hw1shell: invalid command\n");
         exit(1);
 
     } else if (pid > 0) {
@@ -246,7 +247,7 @@ void run_external_process(char cmd[], char *args[], int is_background, process_m
        
     } else {
         // Fork failed
-        perror("fork() failed");
+        fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
         exit(1);
     }
 
@@ -320,7 +321,7 @@ void run_internal_process(char cmd[], char *args[], int *run,  process_manager *
             add_process(ph, pid , cmd , fp);
         } else {
             // Fork failed
-            perror("fork() failed");
+            fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
             exit(1);
         }
     }

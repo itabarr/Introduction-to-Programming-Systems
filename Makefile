@@ -10,7 +10,7 @@ hw1shell: $(OBJS)
 main.o: main.c process_manager.h
 	@$(CC) $(CFLAGS) -c -o main.o main.c
 
-process_manager.o: process_manager.c process_manager.h    # fixed dependency on correct header file
+process_manager.o: process_manager.c process_manager.h    
 	@$(CC) $(CFLAGS) -c -o process_manager.o process_manager.c 
 
 clean:
