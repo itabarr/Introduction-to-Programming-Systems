@@ -164,7 +164,7 @@ void change_directory(char *cmd , char *args[]){
         {
             result = chdir(args[1]);
             if (result == -1) {
-                fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
+                fprintf(stderr, "hw1shell: chdir failed, errno is %d\n", errno);
             }
         }
     
@@ -226,7 +226,7 @@ void run_external_process(char cmd[], char *args[], int is_background, process_m
         }
         
         execvp(args[0], args);
-        fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
+        fprintf(stderr, "hw1shell: execvp failed, errno is %d\n", errno);
         printf("hw1shell: invalid command\n");
         exit(1);
 
@@ -247,7 +247,7 @@ void run_external_process(char cmd[], char *args[], int is_background, process_m
        
     } else {
         // Fork failed
-        fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
+        fprintf(stderr, "hw1shell: fork failed, errno is %d\n", errno);
         exit(1);
     }
 
@@ -321,7 +321,7 @@ void run_internal_process(char cmd[], char *args[], int *run,  process_manager *
             add_process(ph, pid , cmd , fp);
         } else {
             // Fork failed
-            fprintf(stderr, "hw1shell: %s failed, errno is %d\n", strerror(errno), errno);
+            fprintf(stderr, "hw1shell: fork failed, errno is %d\n",  errno);
             exit(1);
         }
     }
