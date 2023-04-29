@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <time.h>
 
+//helpers
 
 int is_not_worker(char* command) { // To check is the first term is for worker, else it is a dispatcher
     if (strcmp(command, 'worker') > 0) {
@@ -67,7 +68,7 @@ void *thread_function(void *args){
 
 void create_threads(pthread_t* thread_ptrs, int num_threads, int save_logs) {
     for (int i = 0; i < num_threads; i++) {
-        create_logs(i, save_logs);  //TODO add create_logs function
+        create_logs(i, save_logs);  
         if (pthread_create(&thread_ptrs[i], NULL, thread_function, NULL) != 0) {
             printf("Error while creating the thread %d", i);
             exit(EXIT_FAILURE);
@@ -89,21 +90,20 @@ int count_worker_lines(FILE* fp) {
 }
 
 void find_workers(char* line) { //TODO change the splitting
-	char first_term[50] = { 0 };
-	char second_term[50] = { 0 };
-	char third_term[50] = { 0 };
-	char fourth_term[50] = { 0 };
-	char fifth_term[50] = { 0 };
-	char word_op[6] = { 0 };
-
+    // Get the first 6 characters of the line
+    char first_term[7] = { 0 };
+    strncpy(first_term, line, 6);
 	if (is_not_worker(first_term)) {
         //TODO add dispatcher functions
 	}
 	else {	//found a worker  
-		char* clean_worker = strtok(first_term, " ");
+		char* clean_worker = strtok(line, " ");
         //TODO send the clean_worker str to the queue 
 	}
 }
+
+
+//main program 
 
 int main(int argc, char *argv[]) {
 	FILE* fp;
@@ -154,14 +154,11 @@ int main(int argc, char *argv[]) {
     //creating the counter files by their names
     create_counters(num_counters);
     
-    // creating the thread's pointers array and the threads themselves
+    // creating the thread's pointers array and the threads themselves (also logs when needed)
     pthread_t thread_ptrs[num_threads];
     create_threads(thread_ptrs, num_threads, save_logs);
 
-
-
-
-	printf("created counter files, threads and times array. starting parsing file!\n");
+	printf("created counter and logs files, threads and times array. starting parsing file!\n");
 
 	// executing stage
 	while (fgets(buffer, MAX_JOB_WDT, fp)) {// running over the txt file, execute dispatch and send workers
