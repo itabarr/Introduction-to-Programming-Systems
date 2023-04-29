@@ -5,6 +5,7 @@ Queue *create_queue() {
     Queue *queue = (Queue*) malloc(sizeof(Queue));
     queue->head = NULL;
     queue->tail = NULL;
+    queue.waiting_jobs = 0;
     return queue;
 }
 
@@ -21,6 +22,7 @@ void enqueue(Queue *queue, char *job_name) {
         queue->tail->next = new_job;
         queue->tail = new_job;
     }
+    queue.waiting_jobs++; 
 }
 
 char *dequeue(Queue *queue) {
@@ -38,6 +40,7 @@ char *dequeue(Queue *queue) {
         queue->head = job->next;
     }
 
+    queue->waiting_jobs--;
     free(job);
     return job_name;
 }
