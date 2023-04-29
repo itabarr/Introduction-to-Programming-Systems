@@ -13,6 +13,7 @@ typedef struct Job {
 
 // Queue structure definition
 typedef struct Queue {
+    int waiting_jobs;
     Job *head;
     Job *tail;
 } Queue;
