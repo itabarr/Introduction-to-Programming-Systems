@@ -27,35 +27,48 @@ int is_not_worker(char* command) { // To check is the first term is for worker, 
 void create_counters(int num_counters) {
     char name[COUNTER_FILE_NAME_LENGTH];
     for (int i = 0; i < num_counters; i++) {
-        char *filename;
-        asprintf(&filename, "count%02d.txt", i);
-        FILE *fp = fopen(filename, "w");
+        char *name;
+        asprintf(&name, "count%02d.txt", i);
+        FILE *fp = fopen(name, "w");
         if (fp != NULL) {
             fprintf(fp, "%lld", 0LL);
             fclose(fp);
         }
-        free(filename);
+        free(name);
     }
 }
 
+void create_logs(int thread_num, int save_logs) {
+    if (save_logs == 0) {
+        return;
+    }
+    char name[13];
+        asprintf(&name, "count%02d.txt", thread_num);
+        FILE *fp = fopen(name, "w");
+        if (fp != NULL) {
+            fprintf(fp, "%lld", 0LL);
+            fclose(fp);
+        }
+        free(name);
+}
 
-void *thread_function(void *arg){
+void *thread_function(void *args){
     wait for number to not be zero:
 
     
         Queue q = (Queue *) arg
         pthread_mutex_lock
         take_job_from_queue, and remove job;
-        
+
         decrement num of jobs
         thread_unlock
 
 }
 
-void create_threads(pthread_t* thread_ptrs, int num_threads) {
+void create_threads(pthread_t* thread_ptrs, int num_threads, int save_logs) {
     for (int i = 0; i < num_threads; i++) {
-        create_logs(i);
-        if (pthread_create(&thread_ptrs[i], NULL, thread_function, args) != 0) {
+        create_logs(i, save_logs);  //TODO add create_logs function
+        if (pthread_create(&thread_ptrs[i], NULL, thread_function, NULL) != 0) {
             printf("Error while creating the thread %d", i);
             exit(EXIT_FAILURE);
         }
@@ -98,7 +111,7 @@ int main(int argc, char *argv[]) {
 	char buffer[MAX_JOB_WDT];
 	int num_threads = 0;
 	int num_counters = 0;
-    int log_enabled = 0;
+    int save_logs = 0;
     int finish_file = 0;
 
     // checking for command line errors
@@ -115,7 +128,7 @@ int main(int argc, char *argv[]) {
     // Parsing the command
     num_threads = atoi(argv[3]);
     num_counters = atoi(argv[4]);
-    log_enabled = atoi(argv[5]);
+    save_logs = atoi(argv[5]);
 	fp = fopen(argv[2], "r");
 
     //checking for input errors
@@ -143,7 +156,7 @@ int main(int argc, char *argv[]) {
     
     // creating the thread's pointers array and the threads themselves
     pthread_t thread_ptrs[num_threads];
-    create_threads(thread_ptrs, num_threads);
+    create_threads(thread_ptrs, num_threads, save_logs);
 
 
 
@@ -155,9 +168,6 @@ int main(int argc, char *argv[]) {
 		find_workers(buffer);
 	}
 	fclose(fp);
-	if (!(fp = fopen(argv[1], "r"))) {//Opening the file for the second time to fill memin
-		exit(EXIT_FAILURE);
-	}
     return 0;
 }
 
