@@ -38,6 +38,30 @@ void create_counters(int num_counters) {
     }
 }
 
+
+void *thread_function(void *arg){
+    wait for number to not be zero:
+
+    
+        Queue q = (Queue *) arg
+        pthread_mutex_lock
+        take_job_from_queue, and remove job;
+        
+        decrement num of jobs
+        thread_unlock
+
+}
+
+void create_threads(pthread_t* thread_ptrs, int num_threads) {
+    for (int i = 0; i < num_threads; i++) {
+        create_logs(i);
+        if (pthread_create(&thread_ptrs[i], NULL, thread_function, args) != 0) {
+            printf("Error while creating the thread %d", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
 int count_worker_lines(FILE* fp) {
     char line[MAX_JOB_WDT];
     int count = 0;
@@ -83,7 +107,7 @@ int main(int argc, char *argv[]) {
         return 1; 
     }
 	if (argc < 5 || !(fp = fopen(argv[2], "r"))) {
-		printf("Opening the file was failed.\n");
+		printf("Error while opening the file");
 		exit(1);
 		return 1;
 	}
@@ -96,7 +120,7 @@ int main(int argc, char *argv[]) {
 
     //checking for input errors
     if (fp == NULL) {
-        printf("Failed to open file.\n");
+        printf("Error while opening the file\n");
         return 1;
     }
     if (num_threads < 0 || num_threads >= NUM_THREADS) {
@@ -119,7 +143,7 @@ int main(int argc, char *argv[]) {
     
     // creating the thread's pointers array and the threads themselves
     pthread_t thread_ptrs[num_threads];
-    create_worker_threads(thread_ptrs, num_threads);
+    create_threads(thread_ptrs, num_threads);
 
 
 
