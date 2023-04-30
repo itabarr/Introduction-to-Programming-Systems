@@ -18,6 +18,6 @@ void increment(int x);
 void decrement(int x);
 
 // Run a string of commands in order
-void run_job(char *commands_str);
+void run_job(void *commands_str);
 
 #endif
