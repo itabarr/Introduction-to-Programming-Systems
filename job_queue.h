@@ -31,5 +31,9 @@ Job *dequeue(Queue *queue);
 void *worker_thread(void *arg);
 void kill(void *arg);
 void free_queue(Queue *queue);
+void add_cmnd_job(Queue *queue, char *cmnd);
+void add_kill_job(Queue *queue);
+void print_job_stats(Archive *archive);
+
 
 #endif
