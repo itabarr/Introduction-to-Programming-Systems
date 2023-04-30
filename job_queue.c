@@ -61,36 +61,44 @@ void kill(void *arg){
     
 }
 
-// int main() {
-//     Queue *queue = create_queue();
-//     pthread_t worker1, worker2;
-//     pthread_create(&worker1, NULL, worker_thread, queue);
-//     pthread_create(&worker2, NULL, worker_thread, queue);
 
+//Comment To Frumkis:
 
-//     char *command_strings[] = {
-//         "increment 1;msleep 2;decrement 1",
-//         "repeat 3;increment 2;msleep 5;decrement 1",
-//         "repeat 3;increment 2;msleep 5;decrement 1",
-//     };
-//     run_job(command_strings[0]);
+int main() {
+    
+    //*** Init queue + jobs***
+    Queue *queue = create_queue();
+    pthread_t worker1, worker2;
+    int num_of_threads = 2;
+    pthread_create(&worker1, NULL, worker_thread, queue);
+    pthread_create(&worker2, NULL, worker_thread, queue);
 
-//     for (int i = 0; i < 3; i++) {
-//         Job *job = (Job*) malloc(sizeof(Job));
-//         job->function = run_job;
-//         job->arg = command_strings[i];
-//         enqueue(queue, job);
-//     }
+    //*** Create jobs arr ***
+    char *command_strings[] = {
+        "increment 1;msleep 2;decrement 1",
+        "repeat 3;increment 2;msleep 5;decrement 1",
+        "repeat 3;increment 2;msleep 5;decrement 1",
+    };
+    
+    //*** Send jobs to queue whenever you want,threads will try to take jobs, no need to handle ***
+    for (int i = 0; i < 3; i++) {
+        Job *job = (Job*) malloc(sizeof(Job));
+        job->function = run_job;
+        job->arg = command_strings[i]; // this is the part you enter the command string
+        enqueue(queue, job);
+    }
+    
+    //*** Send kill jobs to queue to kill threads - need to sent num_of_threads kill jobs ***
+    for (int i = 0; i < num_of_threads; i++) { 
+        Job *job = (Job*) malloc(sizeof(Job));
+        job->function = kill;
+        job->arg = " ";
+        enqueue(queue, job);
+    }
+    
+    //*** Wait for threads to finish ***
+    pthread_join(worker1, NULL);
+    pthread_join(worker2, NULL);
 
-//     for (int i = 0; i < 2; i++) {
-//         Job *job = (Job*) malloc(sizeof(Job));
-//         job->function = kill;
-//         job->arg = " ";
-//         enqueue(queue, job);
-//     }
-
-//     pthread_join(worker1, NULL);
-//     pthread_join(worker2, NULL);
-
-//     return 0;
-// }
+    return 0;
+}
