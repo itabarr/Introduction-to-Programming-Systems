@@ -29,7 +29,7 @@ Queue *create_queue();
 void enqueue(Queue *queue, Job *job);
 Job *dequeue(Queue *queue);
 void *worker_thread(void *arg);
-void thread_func(void *arg);
 void kill(void *arg);
+void free_queue(Queue *queue);
 
 #endif

@@ -80,6 +80,34 @@ void print_archive(Archive *archive) {
     printf("Total jobs in archive: %d\n", archive->count);
 }
 
+void free_queue(Queue *queue) {
+    // Check if queue is empty
+    pthread_mutex_lock(&queue->mutex);
+    int is_empty = (queue->head == NULL);
+    pthread_mutex_unlock(&queue->mutex);
+
+    if (!is_empty) {
+        // If queue is not empty, do not free anything
+        return;
+    }
+
+    // Free all jobs in the archive
+    Archive *archive = &queue->archive;
+    Job *job = archive->head;
+    while (job != NULL) {
+        Job *next_job = job->next;
+        free(job);
+        job = next_job;
+    }
+
+    // Free the mutex and condition variable
+    pthread_mutex_destroy(&queue->mutex);
+    pthread_cond_destroy(&queue->cond);
+
+    // Free the queue
+    free(queue);
+}
+
 
 //Comment To Frumkis:
 
@@ -120,5 +148,8 @@ int main() {
     pthread_join(worker1, NULL);
     pthread_join(worker2, NULL);
     print_archive(&queue->archive);
+
+    // *** Free queue (and it's archive and jobs) ***
+    free_queue(queue);
     return 0;
 }
