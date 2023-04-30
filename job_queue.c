@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <sys/time.h>
 #include "job_queue.h"
 #include "basic_commands.h"
 
@@ -37,6 +38,12 @@ Job *dequeue(Queue *queue) {
     if (queue->head == NULL) {
         queue->tail = NULL;
     }
+
+    Archive *archive = &queue->archive;
+    job->next = archive->head;
+    archive->head = job;
+    archive->count++;
+
     pthread_mutex_unlock(&queue->mutex);
     return job;
 }
@@ -47,18 +54,30 @@ void *worker_thread(void *arg) {
         Job *job = dequeue(queue);
 
         if (job->function == kill){
-            free(job);
             break;
         }
 
+        gettimeofday(&job->start_time, NULL);
         job->function(job->arg);
-        free(job);
+        gettimeofday(&job->end_time, NULL);
     }
     return NULL;
 }
 
 void kill(void *arg){
     
+}
+
+void print_archive(Archive *archive) {
+    printf("Job archive:\n");
+    Job *job = archive->head;
+    while (job != NULL) {
+        printf("Function: %p, Argument: %s, Start time: %ld.%06ld, End time: %ld.%06ld\n",
+            job->function, (char*) job->arg, job->start_time.tv_sec, job->start_time.tv_usec,
+            job->end_time.tv_sec, job->end_time.tv_usec);
+        job = job->next;
+    }
+    printf("Total jobs in archive: %d\n", archive->count);
 }
 
 
@@ -96,9 +115,10 @@ int main() {
         enqueue(queue, job);
     }
     
+
     //*** Wait for threads to finish ***
     pthread_join(worker1, NULL);
     pthread_join(worker2, NULL);
-
+    print_archive(&queue->archive);
     return 0;
 }
