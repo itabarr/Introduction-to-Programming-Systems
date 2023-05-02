@@ -5,3 +5,5 @@
 sleep-and-print.sh
 file.txt
 mock_init.c
+*.txt
+itamar_test
