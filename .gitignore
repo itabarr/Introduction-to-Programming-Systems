@@ -4,3 +4,4 @@
 .vscode/c_cpp_properties.json
 sleep-and-print.sh
 file.txt
+mock_init.c
