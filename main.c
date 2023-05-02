@@ -42,20 +42,6 @@ void create_counter_files(int num_counters) {
     }
 }
 
-void create_logs(int thread_num, int save_logs) {
-    if (save_logs == 0) {
-        return;
-    }
-    char name[13];
-    sprintf(name, "thread%02d.txt", thread_num);
-    FILE *fp = fopen(name, "w");
-    if (fp != NULL) {
-        fprintf(fp, "%lld", 0LL);
-        fclose(fp);
-    }
-}
-
-
 void create_threads(pthread_t* thread_ptrs,struct Queue* queue, int num_threads, int save_logs) { 
     for (int i = 0; i < num_threads; i++) {
         pthread_create_wrapper(&thread_ptrs[i], queue, save_logs, i);
@@ -113,27 +99,23 @@ void dispatcher_command(char*line, int save_logs, struct Queue *queue){
     }
 }
 
-void handle_command(char* line, int save_logs, Queue *queue) { 
-<<<<<<< HEAD
-    if ((strlen(line) - 1) == '\n' ){
-        line[strlen(line) - 1] = '\0'; // Replacing the newline character from the string with null character
-    }
-    else {
-        line[strlen(line)] = '\0';
-    }
-=======
-    /// *** BUG FOUND HERE IN REMOVING NEW LINE CHARACTER WHEN READING LAST LINE OF FILE *** 
+void handle_command(char* line, int save_logs, Queue *queue) {
+    char* cmnd = (char*) malloc(MAX_JOB_WDT * sizeof(char));
+    strcpy(cmnd, line);
 
-    line[strlen(line) - 1] = '\0'; // Replacing the newline character from the string with null character1
+    if (cmnd[strlen(cmnd) - 1] == '\n' ){
+        cmnd[strlen(cmnd) - 1] = '\0'; // Replacing the newline character from the string with null character
+    }
+    
 
->>>>>>> 135b7032ee36ea5747555c1a56dfe7f2e7410de4
     char first_term[7] = { 0 };
-    strncpy(first_term, line, 6);  // Get the first 6 characters of the line
+    strncpy(first_term, cmnd, 6);  // Get the first 6 characters of the line
 	if (is_not_worker(first_term)) {
-        dispatcher_command(line, save_logs, queue);
+        dispatcher_command(cmnd, save_logs, queue);
+        free(cmnd);
 	}
 	else {	//found a worker  
-		char* clean_worker_job = line + 7; 
+		char* clean_worker_job = cmnd + 7; 
         add_cmnd_job(queue, clean_worker_job);
 	}
 }
@@ -231,7 +213,6 @@ int main(int argc, char *argv[]) {
     // print_job_stats(&queue->archive); //TODO edit create_stats_file to receive print_job_stats values
 
     create_stats_file(total_elapsed_time);
-
     // *** Free queue (and it's archive and jobs) ***
     free_queue(queue);
 

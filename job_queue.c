@@ -171,6 +171,8 @@ void add_kill_job(Queue *queue){
     Job *job = (Job*) malloc(sizeof(Job));
     job->function = kill;
     job->arg = NULL;
+    job->start_time = (struct timeval) {0, 0};
+    job->end_time = (struct timeval) {0, 0};
     enqueue(queue, job);
 }
 
@@ -190,6 +192,9 @@ void free_queue(Queue *queue) {
     Job *job = archive->head;
     while (job != NULL) {
         Job *next_job = job->next;
+        if (job->arg != NULL) {
+            free((job->arg)-7);
+        }
         free(job);
         job = next_job;
     }
