@@ -114,12 +114,19 @@ void dispatcher_command(char*line, int save_logs, struct Queue *queue){
 }
 
 void handle_command(char* line, int save_logs, Queue *queue) { 
+<<<<<<< HEAD
     if ((strlen(line) - 1) == '\n' ){
         line[strlen(line) - 1] = '\0'; // Replacing the newline character from the string with null character
     }
     else {
         line[strlen(line)] = '\0';
     }
+=======
+    /// *** BUG FOUND HERE IN REMOVING NEW LINE CHARACTER WHEN READING LAST LINE OF FILE *** 
+
+    line[strlen(line) - 1] = '\0'; // Replacing the newline character from the string with null character1
+
+>>>>>>> 135b7032ee36ea5747555c1a56dfe7f2e7410de4
     char first_term[7] = { 0 };
     strncpy(first_term, line, 6);  // Get the first 6 characters of the line
 	if (is_not_worker(first_term)) {
@@ -177,7 +184,7 @@ int main(int argc, char *argv[]) {
     num_threads = 3;
     num_counters = 4;
     save_logs = 1;
-	fp = fopen("/home/frumkis/Roy/personal/studies/operating_systems/Introduction-to-Programming-Systems/command_file.txt", "r");
+	fp = fopen("command_file.txt", "r");
 
     //checking for input errors
     if (fp == NULL) {
