@@ -228,5 +228,3 @@ void wait_for_queue_empty(Queue *queue) {
     }
     pthread_mutex_unlock(&queue->mutex);
 }
-//Comment To Frumkis:
-
