@@ -1,5 +1,5 @@
 dispatcher_wait
 dispatcher_msleep 5000 
-worker increment 1;msleep 2;decrement 1
-worker repeat 3;increment 2;msleep 5;decrement 1
-worker repeat 3;increment 2;msleep 5;decrement 1
+worker increment 1;msleep 2;decrement 1;
+worker repeat 3;increment 2;msleep 5;decrement 1;
+worker repeat 3;increment 2;msleep 5;decrement 1;

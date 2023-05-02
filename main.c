@@ -56,12 +56,9 @@ void create_logs(int thread_num, int save_logs) {
 }
 
 
-void create_threads(pthread_t* thread_ptrs, int num_threads, int save_logs) { //TODO waiting for Itamar's wrapper
+void create_threads(pthread_t* thread_ptrs,struct Queue* queue, int num_threads, int save_logs) { //TODO waiting for Itamar's wrapper
     for (int i = 0; i < num_threads; i++) {
-        // if (pthread_create_wrapper(&thread_ptrs[i], NULL, worker_thread, NULL, save_logs, i) != 0) {
-        //     printf("Error while creating the thread %d", i);
-        //     exit(EXIT_FAILURE);
-        // }
+        pthread_create_wrapper(&thread_ptrs[i], queue, save_logs, i);
     }
 }
 
@@ -90,11 +87,8 @@ void dispatcher_command(char*line, int save_logs, struct Queue *queue){
         int time = atoi(start+7);
         usleep(time * 1000);
     } else if (strcmp(start, "wait") == 0) {
-        printf("hi");
         // Wait for all pending background commands to complete before continuing to process the next line in the input file
-        // while (!is_empty(queue)) {  //TODO waiting for Itamar's is_empt function
-        //     usleep(100);
-        // }
+        wait_for_queue_empty(queue);
     } else {
         // Unknown dispatcher command
         printf("Error in dispatcher command");
@@ -130,6 +124,16 @@ void handle_command(char* line, int save_logs, Queue *queue) {
 		char* clean_worker_job = line + 7; 
         add_cmnd_job(queue, clean_worker_job);
 	}
+}
+
+void create_stats_file(long long total_elapsed_time) {
+    FILE *file = fopen("stats.txt", "w");
+    if (file == NULL) {
+        printf("Error opening file\n");
+        return;
+    }
+    fprintf(file, "total running time: %lld milliseconds", total_elapsed_time);
+    fclose(file);
 }
 
 
@@ -189,7 +193,7 @@ int main(int argc, char *argv[]) {
     
     // creating the thread's pointers array and the threads themselves (also logs when needed)
     pthread_t thread_ptrs[num_threads];
-    create_threads(thread_ptrs, num_threads, save_logs);
+    create_threads(thread_ptrs, queue, num_threads, save_logs);
 
 	printf("created counter and logs files, threads and times array. starting parsing file!\n");
 
@@ -204,16 +208,18 @@ int main(int argc, char *argv[]) {
         add_kill_job(queue);
     }
     
-    //*** Wait for threads to finish ***
+    //*** Wait for threads to finish ***           
     for (int i = 0; i < num_threads; i++) { 
-        pthread_join(thread_ptrs[i], NULL);
+        pthread_join(thread_ptrs[i], NULL);  
     }
     
     gettimeofday(&total_end_time, NULL); // taking the total_end_time of the whole program
     long long total_elapsed_time = ((total_end_time.tv_sec - total_start_time.tv_sec) * 1000LL) + ((total_end_time.tv_usec - total_start_time.tv_usec) / 1000LL);
 
-    // print_archive(&queue->archive);
-    print_job_stats(&queue->archive); //TODO write function that creates stats_file and write first line of total time
+    // print_job_stats(&queue->archive); //TODO edit create_stats_file to receive print_job_stats values
+
+    create_stats_file(total_elapsed_time);
+
     // *** Free queue (and it's archive and jobs) ***
     free_queue(queue);
 
