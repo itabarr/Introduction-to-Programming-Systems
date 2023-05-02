@@ -12,7 +12,8 @@ Queue *create_queue() {
     queue->head = NULL;
     queue->tail = NULL;
     pthread_mutex_init(&queue->mutex, NULL);
-    pthread_cond_init(&queue->cond, NULL);
+    pthread_cond_init(&queue->cond_q_non_empty, NULL);
+    pthread_cond_init(&queue->cond_q_empty, NULL);
     return queue;
 }
 
@@ -26,14 +27,15 @@ void enqueue(Queue *queue, Job *job) {
         queue->tail->next = job;
         queue->tail = job;
     }
-    pthread_cond_signal(&queue->cond);
+    pthread_cond_signal(&queue->cond_q_non_empty);
     pthread_mutex_unlock(&queue->mutex);
 }
 
 Job *dequeue(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
     while (queue->head == NULL) {
-        pthread_cond_wait(&queue->cond, &queue->mutex);
+        pthread_cond_signal(&queue->cond_q_empty);
+        pthread_cond_wait(&queue->cond_q_non_empty, &queue->mutex);
     }
     Job *job = queue->head;
     queue->head = queue->head->next;
@@ -51,7 +53,20 @@ Job *dequeue(Queue *queue) {
 }
 
 void *worker_thread(void *arg) {
-    Queue *queue = (Queue*) arg;
+    struct timeval start_time, end_time;
+    ThreadData *data = (ThreadData*) arg;
+    Queue *queue = data->queue;
+    int create_log = data->create_log;
+    int thread_num = data->thread_num;
+
+
+    char log_filename[16];
+    FILE *log_file = NULL;
+    if (create_log) {
+        sprintf(log_filename, "thread%02d.txt", thread_num);
+        log_file = fopen(log_filename, "w");
+    }
+    
     while (1) {
         Job *job = dequeue(queue);
 
@@ -59,10 +74,35 @@ void *worker_thread(void *arg) {
             break;
         }
 
+        if (create_log) {
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+            long long total_time = (current_time.tv_sec - start_time.tv_sec) * 1000LL +
+                (current_time.tv_usec - start_time.tv_usec) / 1000LL;
+
+            fprintf(log_file, "TIME %lld: START job %s\n", total_time, job->arg);
+        }
+        
         gettimeofday(&job->start_time, NULL);
         job->function(job->arg);
         gettimeofday(&job->end_time, NULL);
+
+        if (create_log) {
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+            long long total_time = (current_time.tv_sec - start_time.tv_sec) * 1000LL +
+                (current_time.tv_usec - start_time.tv_usec) / 1000LL;
+
+            fprintf(log_file, "TIME %lld: END job %s\n", total_time, job->arg);
+        }
+
+        
     }
+    if (create_log) {
+        fclose(log_file);
+    }
+
+    free_thread_data(data);
     return NULL;
 }
 
@@ -156,17 +196,43 @@ void free_queue(Queue *queue) {
 
     // Free the mutex and condition variable
     pthread_mutex_destroy(&queue->mutex);
-    pthread_cond_destroy(&queue->cond);
+    pthread_cond_destroy(&queue->cond_q_empty);
+    pthread_cond_destroy(&queue->cond_q_non_empty);
 
     // Free the queue
     free(queue);
 }
 
+// pthread create wrapper to create log file to each thread
+void pthread_create_wrapper(pthread_t *thread, Queue *queue ,int create_log , int thread_num){
+    ThreadData *thread_data = create_thread_data(queue, create_log, thread_num);
+    pthread_create(thread, NULL, worker_thread, thread_data);
+}
 
+ThreadData *create_thread_data(Queue *queue, int create_log, int thread_num) {
+    ThreadData *data = (ThreadData*) malloc(sizeof(ThreadData));
+    data->queue = queue;
+    data->create_log = create_log;
+    data->thread_num = thread_num;
+    return data;
+}
+
+void free_thread_data(ThreadData *data) {
+    free(data);
+}
+
+void wait_for_queue_empty(Queue *queue) {
+    pthread_mutex_lock(&queue->mutex);
+    while (queue->head != NULL) {
+        pthread_cond_wait(&queue->cond_q_empty, &queue->mutex);
+    }
+    pthread_mutex_unlock(&queue->mutex);
+}
 //Comment To Frumkis:
 
 // int main() {
     
+<<<<<<< HEAD
 //     //*** Init queue + jobs***
 //     Queue *queue = create_queue();
 //     pthread_t worker1, worker2;
@@ -201,3 +267,50 @@ void free_queue(Queue *queue) {
 //     free_queue(queue);
 //     return 0;
 // }
+=======
+    //*** Init queue + jobs***
+    Queue *queue = create_queue();
+    pthread_t worker0, worker1;
+    int num_of_threads = 2;
+    pthread_create_wrapper(&worker0, queue , 1 , 0);
+    pthread_create_wrapper(&worker1, queue , 1 , 1);
+
+    //*** Create jobs arr ***
+    char *command_strings[] = {
+        "increment 1;msleep 10000;decrement 1",
+        "repeat 3;increment 2;msleep 10000;decrement 1",
+        "repeat 3;increment 2;msleep 5;decrement 1",
+    };
+    
+    //*** Send jobs to queue whenever you want,threads will try to take jobs, no need to handle ***
+    printf("Sending first jobs bundle to queue\n");
+
+    for (int i = 0; i < 3; i++) {
+        add_cmnd_job(queue, command_strings[i]);
+    }
+    
+    printf("Waiting for empty queue.\n");
+    wait_for_queue_empty(queue);
+    printf("Queue is empty.\n");
+
+
+    printf("Sending second jobs bundle to queue\n");
+    for (int i = 0; i < 3; i++) {
+        add_cmnd_job(queue, command_strings[i]);
+    }
+    //*** Send kill jobs to queue to kill threads - need to sent num_of_threads kill jobs ***
+    for (int i = 0; i < num_of_threads; i++) { 
+        add_kill_job(queue);
+    }
+    
+
+    //*** Wait for threads to finish ***
+    pthread_join(worker0, NULL);
+    pthread_join(worker1, NULL);
+    print_archive(&queue->archive);
+    print_job_stats(&queue->archive);
+    // *** Free queue (and it's archive and jobs) ***
+    free_queue(queue);
+    return 0;
+}
+>>>>>>> 5af0fc9b1e548060112f9ca01158aed0eb3b56bd
