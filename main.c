@@ -56,7 +56,7 @@ void create_logs(int thread_num, int save_logs) {
 }
 
 
-void create_threads(pthread_t* thread_ptrs,struct Queue* queue, int num_threads, int save_logs) { //TODO waiting for Itamar's wrapper
+void create_threads(pthread_t* thread_ptrs,struct Queue* queue, int num_threads, int save_logs) { 
     for (int i = 0; i < num_threads; i++) {
         pthread_create_wrapper(&thread_ptrs[i], queue, save_logs, i);
     }
@@ -114,7 +114,12 @@ void dispatcher_command(char*line, int save_logs, struct Queue *queue){
 }
 
 void handle_command(char* line, int save_logs, Queue *queue) { 
-    line[strlen(line) - 1] = '\0'; // Replacing the newline character from the string with null character
+    if ((strlen(line) - 1) == '\n' ){
+        line[strlen(line) - 1] = '\0'; // Replacing the newline character from the string with null character
+    }
+    else {
+        line[strlen(line)] = '\0';
+    }
     char first_term[7] = { 0 };
     strncpy(first_term, line, 6);  // Get the first 6 characters of the line
 	if (is_not_worker(first_term)) {
