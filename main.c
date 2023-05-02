@@ -210,6 +210,7 @@ int main(int argc, char *argv[]) {
     }
     
     gettimeofday(&total_end_time, NULL); // taking the total_end_time of the whole program
+    long long total_elapsed_time = ((total_end_time.tv_sec - total_start_time.tv_sec) * 1000LL) + ((total_end_time.tv_usec - total_start_time.tv_usec) / 1000LL);
 
     // print_archive(&queue->archive);
     print_job_stats(&queue->archive); //TODO write function that creates stats_file and write first line of total time
