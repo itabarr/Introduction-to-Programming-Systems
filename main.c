@@ -1,3 +1,13 @@
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <ctype.h>
+#include <time.h>
+#include <sys/time.h>
+
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_WARNINGS_GLOBALS
@@ -7,14 +17,7 @@
 #define COUNTER_FILE_NAME_LENGTH 15
 
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <pthread.h>
-#include <ctype.h>
-#include <time.h>
+
 
 //helpers
 
@@ -89,12 +92,59 @@ int count_worker_lines(FILE* fp) {
     return count;
 }
 
-void find_workers(char* line) { //TODO change the splitting
+void dispatcher_command(char*line, int save_logs, struct work_queue *work_queue){
+    // Extract the command and argument from line
+    char* start = line + 11; // Skip "dispatcher_" prefix
+    char* end = strchr(start, '_'); // Find the first '_' character
+    if (!end) {
+        // Missing argument
+        printf("Missing argument for dispatcher command");
+        return;
+    }
+    *end = '\0';
+    int time = atoi(end+1);
+    // Creating and writing to log_file if needed
+    if (save_logs == 1):                                     // TODO take Itamar's way of measuring start time and current time
+        // Get current time and calculate elapsed time
+        struct timeval current_time;
+        struct timeval START_TIME, current_time;
+        gettimeofday(&START_TIME, NULL);
+        gettimeofday(&current_time, NULL);
+        long long elapsed_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
+
+        // Open the log file for appending
+        FILE* log_file = fopen("dispatcher.txt", "a");
+        if (log_file == NULL) {
+            printf("Failed to open log file\n");
+            return;
+        }
+        // Write to the log file
+        fprintf(log_file, "TIME %lld: read cmd line: %s\n", elapsed_time, line);
+        fclose(log_file);
+
+
+    // Executing
+    if (strncmp(start, "msleep", 6) == 0) {
+        usleep(time * 1000);
+    } else if (strcmp(start, "wait") == 0) {
+        // Wait for all pending background commands to complete before continuing to process the next line in the input file
+        while (!is_empty(work_queue)) {
+            usleep(1000);
+        }
+    } else {
+        // Unknown dispatcher command
+        printf("Unknown dispatcher command: %s\n", line);
+    }
+}
+
+void find_workers(char* line, int save_logs, struct work_queue *work_queue) { 
     // Get the first 6 characters of the line
+    line[strcspn(line, "\n")] = 0; // TODO check if affects, saw that in Almog's work - Replacing the newline character from the string with null character
+    // line[strlen(line) - 1] = '\0'; //TODO another implementation for Almog's work. If necessary, this one better
     char first_term[7] = { 0 };
     strncpy(first_term, line, 6);
 	if (is_not_worker(first_term)) {
-        //TODO add dispatcher functions
+        dispatcher_command(line, save_logs, work_queue);
 	}
 	else {	//found a worker  
 		char* clean_worker = strtok(line, " ");
@@ -162,9 +212,12 @@ int main(int argc, char *argv[]) {
 
 	// executing stage
 	while (fgets(buffer, MAX_JOB_WDT, fp)) {// running over the txt file, execute dispatch and send workers
-		find_workers(buffer);
+		find_workers(buffer, save_logs, work_queue);  //TODO think about how to synchronize the work_queue with the worker function
 	}
 	fclose(fp);
+
+//TODO add statistics
+
     return 0;
 }
 
