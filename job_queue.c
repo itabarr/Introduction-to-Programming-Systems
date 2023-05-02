@@ -165,39 +165,39 @@ void free_queue(Queue *queue) {
 
 //Comment To Frumkis:
 
-int main() {
+// int main() {
     
-    //*** Init queue + jobs***
-    Queue *queue = create_queue();
-    pthread_t worker1, worker2;
-    int num_of_threads = 2;
-    pthread_create(&worker1, NULL, worker_thread, queue);
-    pthread_create(&worker2, NULL, worker_thread, queue);
+//     //*** Init queue + jobs***
+//     Queue *queue = create_queue();
+//     pthread_t worker1, worker2;
+//     int num_of_threads = 2;
+//     pthread_create(&worker1, NULL, worker_thread, queue);
+//     pthread_create(&worker2, NULL, worker_thread, queue);
 
-    //*** Create jobs arr ***
-    char *command_strings[] = {
-        "increment 1;msleep 2;decrement 1",
-        "repeat 3;increment 2;msleep 5;decrement 1",
-        "repeat 3;increment 2;msleep 5;decrement 1",
-    };
+//     //*** Create jobs arr ***
+//     char *command_strings[] = {
+//         "increment 1;msleep 2;decrement 1",
+//         "repeat 3;increment 2;msleep 5;decrement 1",
+//         "repeat 3;increment 2;msleep 5;decrement 1",
+//     };
     
-    //*** Send jobs to queue whenever you want,threads will try to take jobs, no need to handle ***
-    for (int i = 0; i < 3; i++) {
-        add_cmnd_job(queue, command_strings[i]);
-    }
+//     //*** Send jobs to queue whenever you want,threads will try to take jobs, no need to handle ***
+//     for (int i = 0; i < 3; i++) {
+//         add_cmnd_job(queue, command_strings[i]);
+//     }
     
-    //*** Send kill jobs to queue to kill threads - need to sent num_of_threads kill jobs ***
-    for (int i = 0; i < num_of_threads; i++) { 
-        add_kill_job(queue);
-    }
+//     //*** Send kill jobs to queue to kill threads - need to sent num_of_threads kill jobs ***
+//     for (int i = 0; i < num_of_threads; i++) { 
+//         add_kill_job(queue);
+//     }
     
 
-    //*** Wait for threads to finish ***
-    pthread_join(worker1, NULL);
-    pthread_join(worker2, NULL);
-    print_archive(&queue->archive);
-    print_job_stats(&queue->archive);
-    // *** Free queue (and it's archive and jobs) ***
-    free_queue(queue);
-    return 0;
-}
+//     //*** Wait for threads to finish ***
+//     pthread_join(worker1, NULL);
+//     pthread_join(worker2, NULL);
+//     print_archive(&queue->archive);
+//     print_job_stats(&queue->archive);
+//     // *** Free queue (and it's archive and jobs) ***
+//     free_queue(queue);
+//     return 0;
+// }
