@@ -137,7 +137,7 @@ void dispatcher_command(char*line, int save_logs, struct work_queue *work_queue)
     }
 }
 
-void find_workers(char* line, int save_logs, struct work_queue *work_queue) { //TODO change the splitting
+void find_workers(char* line, int save_logs, struct work_queue *work_queue) { 
     // Get the first 6 characters of the line
     line[strcspn(line, "\n")] = 0; // TODO check if affects, saw that in Almog's work - Replacing the newline character from the string with null character
     // line[strlen(line) - 1] = '\0'; //TODO another implementation for Almog's work. If necessary, this one better
@@ -215,6 +215,9 @@ int main(int argc, char *argv[]) {
 		find_workers(buffer, save_logs, work_queue);  //TODO think about how to synchronize the work_queue with the worker function
 	}
 	fclose(fp);
+
+//TODO add statistics
+
     return 0;
 }
 
