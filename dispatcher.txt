@@ -4,3 +4,34 @@ TIME 0: read cmd line: dispatcher_wait
 TIME 5000: read cmd line: dispatcher_msleep 5000 
 TIME 0: read cmd line: dispatcher_wait
 TIME 5000: read cmd line: dispatcher_msleep 5000 
+TIME 0: read cmd line: dispatcher_wait
+TIME 5000: read cmd line: dispatcher_msleep 5000 
+TIME 0: read cmd line: dispatcher_wait
+TIME 0: read cmd line: dispatcher_wait
+TIME 5000: read cmd line: dispatcher_msleep 5000
+TIME 0: read cmd line: dispatcher_wait
+TIME 5000: read cmd line: dispatcher_msleep 5000
+TIME 0: read cmd line: dispatcher_wait
+TIME 5000: read cmd line: dispatcher_msleep 5000
+TIME 0: read cmd line: dispatcher_wait
+
+TIME 5000: read cmd line: dispatcher_msleep 5000
+
+TIME 0: read cmd line: dispatcher_wait
+
+TIME 5000: read cmd line: dispatcher_msleep 5000
+
+TIME 0: read cmd line: dispatcher_wait
+
+TIME 5000: read cmd line: dispatcher_msleep 5000
+
+TIME 0: read cmd line: 
+
+TIME 0: read cmd line: dispatcher_wait
+
+TIME 5000: read cmd line: dispatcher_msleep 5000
+
+TIME 0: read cmd line: dispatcher_wait
+
+TIME 5000: read cmd line: dispatcher_msleep 5000
+
