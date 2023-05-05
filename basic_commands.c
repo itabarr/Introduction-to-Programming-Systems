@@ -2,7 +2,7 @@
 #define MAX_COMMANDS 1024
 
 void msleep(int x) {
-    sleep(x / 1000);
+    usleep(x * 1000);
 }
 
 void increment(int x) {
@@ -73,6 +73,12 @@ void run_job(void *_commands_str) {
     for (int i = 0; i < commands_num; i++) {
 
         command = commands[i];
+
+        if (*command == ' '){
+            command = command + 1;
+        }
+
+        //printf("%s\n", command);
         arg = args[i];
         if (strcmp(command, "msleep") == 0) {
             msleep(arg);
@@ -92,6 +98,11 @@ void run_job(void *_commands_str) {
         for (int i = repeat_index+1; i < commands_num; i++) {
             command = commands[i];
             arg = args[i];
+            if (*command == ' '){
+                command = command + 1;
+            }
+
+            //printf("%s\n", command);
             if (strcmp(command, "msleep") == 0) {
                 msleep(arg);
             } else if (strcmp(command, "increment") == 0) {
