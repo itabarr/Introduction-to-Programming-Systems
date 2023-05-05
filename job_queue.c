@@ -112,11 +112,17 @@ void kill(void *arg){
 
 void print_archive(Archive *archive) {
     printf("Job archive:\n");
+    long long elapsed_time = 0;
     Job *job = archive->head;
+
+
     while (job != NULL) {
-        printf("Function: %p, Argument: %s, Start time: %ld.%06ld, End time: %ld.%06ld\n",
-            job->function, (char*) job->arg, job->start_time.tv_sec, job->start_time.tv_usec,
-            job->end_time.tv_sec, job->end_time.tv_usec);
+        elapsed_time = ((job->end_time.tv_sec - job->start_time.tv_sec) * 1000000LL +
+                          (job->end_time.tv_usec - job->start_time.tv_usec));
+
+        printf("Function: %s, Start time: %ld.%06ld, End time: %ld.%06ld, Running time: %lld microseconds\n",
+                    (char*) job->arg, job->start_time.tv_sec, job->start_time.tv_usec,
+                    job->end_time.tv_sec, job->end_time.tv_usec, elapsed_time);
         job = job->next;
     }
     printf("Total jobs in archive: %d\n", archive->count);
@@ -158,6 +164,44 @@ void print_job_stats(Archive *archive) {
     printf("Min job turnaround time: %lld milliseconds\n", min_time);
     printf("Average job turnaround time: %f milliseconds\n", average_time);
     printf("Max job turnaround time: %lld milliseconds\n", max_time);
+}
+
+void print_job_stats_to_file(Archive *archive, FILE *file) {
+    // Calculate sum, min, max, and count of job turnaround times
+    if (archive->head == NULL) {
+        fprintf(file, "Job archive is empty\n");
+        return;
+    }
+
+    long long sum = 0;
+    long long min_time = LLONG_MAX;
+    long long max_time = LLONG_MIN;
+    int count = 0;
+    Job *job = archive->head;
+    while (job != NULL) {
+        if (job->arg != NULL) {
+            long long turnaround_time = (job->end_time.tv_sec - job->start_time.tv_sec) * 1000 +
+                                        (job->end_time.tv_usec - job->start_time.tv_usec) / 1000;
+            sum += turnaround_time;
+            if (turnaround_time < min_time) {
+                min_time = turnaround_time;
+            }
+            if (turnaround_time > max_time) {
+                max_time = turnaround_time;
+            }
+            count++;
+        }
+        job = job->next;
+    }
+
+    // Calculate average turnaround time
+    double average_time = (double) sum / count;
+
+    // Print job stats to file
+    fprintf(file, "sum of jobs turnaround time: %lld milliseconds\n", sum);
+    fprintf(file, "min job turnaround time: %lld milliseconds\n", min_time);
+    fprintf(file, "average job turnaround time: %f milliseconds\n", average_time);
+    fprintf(file, "max job turnaround time: %lld milliseconds\n", max_time);
 }
 
 void add_cmnd_job(Queue *queue, char *cmnd){

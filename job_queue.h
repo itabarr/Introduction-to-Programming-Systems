@@ -42,6 +42,7 @@ void free_queue(Queue *queue);
 void add_cmnd_job(Queue *queue, char *cmnd);
 void add_kill_job(Queue *queue);
 void print_job_stats(Archive *archive);
+void print_job_stats_to_file(Archive *archive, FILE *file);
 void print_archive(Archive *archive);
 void wait_for_queue_empty(Queue *queue);
 
