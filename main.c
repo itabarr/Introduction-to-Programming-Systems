@@ -9,6 +9,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "job_queue.h"
+#include "main.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_DEPRECATE
@@ -18,10 +19,6 @@
 #define MAX_JOB_WDT 1024
 #define COUNTER_FILE_NAME_LENGTH 15
 
-
-
-
-//helpers
 
 int is_not_worker(char* first_term) { // To check is the first term is for worker, else it is a dispatcher
     if (strncmp(first_term, "worker", 6) != 0) {
@@ -119,17 +116,22 @@ void handle_command(char* line, int save_logs, Queue *queue) {
         add_cmnd_job(queue, clean_worker_job);
 	}
 }
+ 
 
-void create_stats_file(long long total_elapsed_time) {
+//create stats file and return the file pointer
+FILE* create_stats_file() {
     FILE *file = fopen("stats.txt", "w");
     if (file == NULL) {
-        printf("Error opening file\n");
-        return;
+        printf("Failed to open stats file\n");
+        return NULL;
     }
-    fprintf(file, "total running time: %lld milliseconds", total_elapsed_time);
-    fclose(file);
+    return file;
 }
 
+// close stats file given the total elapsed time and the file pointer
+void write_stats_file(long long total_elapsed_time, FILE *file) {
+    fprintf(file, "total running time: %lld milliseconds\n", total_elapsed_time);
+}
 
 //main program 
 
@@ -145,41 +147,33 @@ int main(int argc, char *argv[]) {
     struct timeval total_end_time;
     gettimeofday(&total_start_time, NULL); // taking the total_start_time of the whole program
     Queue *queue = create_queue();
-                                                    //TODO take real args
-    // // checking for command line errors
-    // if (strcmp(argv[1], "hw2") != 0) { 
-    //     printf("Error while writing command. 'hw2' should be instead of '%s'", argv[1]);
-    //     return 1; 
-    // }
-	// if (argc < 5 || !(fp = fopen(argv[2], "r"))) {
-	// 	printf("Error while opening the file");
-	// 	exit(1);
-	// 	return 1;
-	// }
+     
+    remove("dispatcher.txt");
 
-    // // Parsing the command
-    // num_threads = atoi(argv[3]);
-    // num_counters = atoi(argv[4]);
-    // save_logs = atoi(argv[5]);
-	// fp = fopen(argv[2], "r");
-
-    num_threads = 3;
-    num_counters = 4;
-    save_logs = 1;
-	fp = fopen("command_file.txt", "r");
-
-    //checking for input errors
+    if (argc < 5){
+        printf("Error: not enough arguments");
+        exit(1);
+    }
+    
+    fp = fopen(argv[1], "r");
     if (fp == NULL) {
-        printf("Error while opening the file\n");
-        return 1;
+        printf("Error while opening file %s\n" , argv[1]);
+        exit(1);
     }
-    if (num_threads < 0 || num_threads >= NUM_THREADS) {
+	
+    // Parsing the command
+    num_threads = atoi(argv[2]);
+    num_counters = atoi(argv[3]);
+    save_logs = atoi(argv[4]);
+	
+    //checking for input errors
+    if (num_threads < 1 || num_threads > NUM_THREADS) {
         printf("Wrong number of threads: %d", num_threads);
-        return 1;
+        exit(1);
     }
-    if (num_counters < 0 || num_counters >= NUM_COUNTERS) {
+    if (num_counters < 1 || num_counters > NUM_COUNTERS) {
         printf("Wrong number of counters: %d", num_counters);
-        return 1;
+        exit(1);
     }
 
     //creating the counter files by their names
@@ -188,8 +182,6 @@ int main(int argc, char *argv[]) {
     // creating the thread's pointers array and the threads themselves (also logs when needed)
     pthread_t thread_ptrs[num_threads];
     create_threads(thread_ptrs, queue, num_threads, save_logs);
-
-	printf("created counter and logs files, threads and times array. starting parsing file!\n");
 
 	// executing stage
 	while (fgets(raw_command_line, MAX_JOB_WDT, fp)) {// running over the txt file, execute dispatch and send workers
@@ -212,11 +204,15 @@ int main(int argc, char *argv[]) {
 
     // print_job_stats(&queue->archive); //TODO edit create_stats_file to receive print_job_stats values
 
-    create_stats_file(total_elapsed_time);
+    FILE *stats_file = create_stats_file();
+    write_stats_file(total_elapsed_time, stats_file);
+    print_job_stats_to_file(&queue->archive, stats_file);
+    fclose(stats_file); 
+
+    print_archive(&queue->archive);
+    
     // *** Free queue (and it's archive and jobs) ***
     free_queue(queue);
-
-
 
     return 0;
 }
