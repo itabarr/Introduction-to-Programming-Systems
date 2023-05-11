@@ -11,22 +11,20 @@
 #include "job_queue.h"
 #include "main.h"
 
-#define _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_DEPRECATE
-#define _CRT_SECURE_NO_WARNINGS_GLOBALS
 #define NUM_COUNTERS  100
 #define NUM_THREADS 4096
 #define MAX_JOB_WDT 1024
 #define COUNTER_FILE_NAME_LENGTH 15
 
-
-int is_not_worker(char* first_term) { // To check is the first term is for worker, else it is a dispatcher
+// check if the line is not a worker command
+int is_not_worker(char* first_term) { 
     if (strncmp(first_term, "worker", 6) != 0) {
         return 1;
 	}
 	return 0;
 }
 
+// create counter files given the number of counters
 void create_counter_files(int num_counters) {
     char name[COUNTER_FILE_NAME_LENGTH];
     for (int i = 0; i < num_counters; i++) {
@@ -39,52 +37,43 @@ void create_counter_files(int num_counters) {
     }
 }
 
+// create threads given the number of threads, the queue and the save_logs flag
 void create_threads(pthread_t* thread_ptrs,struct Queue* queue, int num_threads, int save_logs) { 
     for (int i = 0; i < num_threads; i++) {
         pthread_create_wrapper(&thread_ptrs[i], queue, save_logs, i);
     }
 }
 
-int count_worker_lines(FILE* fp) {
-    char line[MAX_JOB_WDT];
-    int count = 0;
+// do the dipacher command logic
+void dispatcher_command(char* line, int save_logs, struct Queue *queue , struct timeval start_time){ 
     
-    while (fgets(line, MAX_JOB_WDT, fp)) {
-        if (strncmp(line, "worker", 6) == 0) {
-            count++;
-        }
-    }
-    
-    return count;
-}
+    char* start = line + 11; 
+    struct timeval read_time;
 
-void dispatcher_command(char*line, int save_logs, struct Queue *queue){ 
-    // Extract the command and argument from line
-    char* start = line + 11; // Skip "dispatcher_" prefix
-    struct timeval start_time;
-    struct timeval stop_time;
-    gettimeofday(&start_time, NULL); // taking the start_time of the dispatcher_command
-
-    // Executing
+    // Handle the dispatcher commands logic
     if (strncmp(start, "msleep", 6) == 0) {
+
         int time = atoi(start+7);
         usleep(time * 1000);
+
     } else if (strcmp(start, "wait") == 0) {
-        // Wait for all pending background commands to complete before continuing to process the next line in the input file
+        
+        //printf("Waiting for queue to be empty\n");
         wait_for_queue_empty(queue);
-    } else {
-        // Unknown dispatcher command
+   
+    } else {    
+
         printf("Error in dispatcher command");
     }
         
-    gettimeofday(&stop_time, NULL);   // taking the start_time of the dispatcher_command
-    // Creating and writing to log_file if needed
+    gettimeofday(&read_time, NULL);  
+    
+    // Handle logging for the dispatcher 
     if (save_logs == 1) {  
-        // calculate elapsed time
+        // print start time and read time for debugging (all the object)\
 
-        long long elapsed_time = ((stop_time.tv_sec - start_time.tv_sec) * 1000LL) + ((stop_time.tv_usec - start_time.tv_usec) / 1000LL);
+        long long elapsed_time = (read_time.tv_sec - start_time.tv_sec) * 1000LL + (read_time.tv_usec - start_time.tv_usec) / 1000LL;
 
-        // Open the log file for appending
         FILE* log_file = fopen("dispatcher.txt", "a");
         if (log_file == NULL) {
             printf("Failed to open log file\n");
@@ -96,29 +85,31 @@ void dispatcher_command(char*line, int save_logs, struct Queue *queue){
     }
 }
 
-void handle_command(char* line, int save_logs, Queue *queue) {
+// handle the command given the line from the cmnd file
+void handle_command(char* line, int save_logs, Queue *queue , struct timeval start_time) {
     char* cmnd = (char*) malloc(MAX_JOB_WDT * sizeof(char));
     strcpy(cmnd, line);
 
+    // cmnd parsing 
     if (cmnd[strlen(cmnd) - 1] == '\n' ){
-        cmnd[strlen(cmnd) - 1] = '\0'; // Replacing the newline character from the string with null character
+        cmnd[strlen(cmnd) - 1] = '\0'; 
     }
-    
-
     char first_term[7] = { 0 };
-    strncpy(first_term, cmnd, 6);  // Get the first 6 characters of the line
-	if (is_not_worker(first_term)) {
-        dispatcher_command(cmnd, save_logs, queue);
+    strncpy(first_term, cmnd, 6);  
+	
+    //cmnd logic
+    if (is_not_worker(first_term)) {
+        dispatcher_command(cmnd, save_logs, queue , start_time);
         free(cmnd);
 	}
-	else {	//found a worker  
+
+	else {  
 		char* clean_worker_job = cmnd + 7; 
         add_cmnd_job(queue, clean_worker_job);
 	}
 }
  
-
-//create stats file and return the file pointer
+// create stats file and return the file pointer
 FILE* create_stats_file() {
     FILE *file = fopen("stats.txt", "w");
     if (file == NULL) {
@@ -133,23 +124,25 @@ void write_stats_file(long long total_elapsed_time, FILE *file) {
     fprintf(file, "total running time: %lld milliseconds\n", total_elapsed_time);
 }
 
-//main program 
-
+// main function
 int main(int argc, char *argv[]) {
 	FILE* fp;
 	char line[MAX_JOB_WDT];
 	char raw_command_line[MAX_JOB_WDT];
-	int num_threads = 0;
-	int num_counters = 0;
-    int save_logs = 0;
-    int finish_file = 0;
+	int num_threads;
+	int num_counters;
+    int save_logs;
+    
     struct timeval total_start_time;
     struct timeval total_end_time;
     gettimeofday(&total_start_time, NULL); // taking the total_start_time of the whole program
-    Queue *queue = create_queue();
-     
+    Queue *queue = create_queue(total_start_time);
+
+    // remove the stats file if it exists 
     remove("dispatcher.txt");
 
+
+    // args parsing
     if (argc < 5){
         printf("Error: not enough arguments");
         exit(1);
@@ -161,7 +154,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 	
-    // Parsing the command
     num_threads = atoi(argv[2]);
     num_counters = atoi(argv[3]);
     save_logs = atoi(argv[4]);
@@ -185,33 +177,32 @@ int main(int argc, char *argv[]) {
 
 	// executing stage
 	while (fgets(raw_command_line, MAX_JOB_WDT, fp)) {// running over the txt file, execute dispatch and send workers
-		handle_command(raw_command_line, save_logs, queue); 
+		handle_command(raw_command_line, save_logs, queue , total_start_time); 
 	}
 	fclose(fp);
 
-    //*** Send kill jobs to queue to kill threads - need to sent num_of_threads kill jobs ***
+    //Send kill jobs to queue to kill threads - need to sent num_of_threads kill jobs
     for (int i = 0; i < num_threads; i++) { 
         add_kill_job(queue);
     }
     
-    //*** Wait for threads to finish ***           
+    // Wait for threads to finish        
     for (int i = 0; i < num_threads; i++) { 
         pthread_join(thread_ptrs[i], NULL);  
     }
-    
-    gettimeofday(&total_end_time, NULL); // taking the total_end_time of the whole program
-    long long total_elapsed_time = ((total_end_time.tv_sec - total_start_time.tv_sec) * 1000LL) + ((total_end_time.tv_usec - total_start_time.tv_usec) / 1000LL);
 
-    // print_job_stats(&queue->archive); //TODO edit create_stats_file to receive print_job_stats values
+    // Take total time and create stats files    
+    gettimeofday(&total_end_time, NULL);
+    long long total_elapsed_time = ((total_end_time.tv_sec - total_start_time.tv_sec) * 1000LL) + ((total_end_time.tv_usec - total_start_time.tv_usec) / 1000LL);
 
     FILE *stats_file = create_stats_file();
     write_stats_file(total_elapsed_time, stats_file);
     print_job_stats_to_file(&queue->archive, stats_file);
     fclose(stats_file); 
 
-    print_archive(&queue->archive);
+    //print_archive(&queue->archive);
     
-    // *** Free queue (and it's archive and jobs) ***
+    // Free queue (and it's archive and jobs)
     free_queue(queue);
 
     return 0;
