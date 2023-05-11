@@ -1,10 +1,12 @@
 #include "basic_commands.h"
 #define MAX_COMMANDS 1024
 
+// msleep function 
 void msleep(int x) {
     usleep(x * 1000);
 }
 
+// increment function 
 void increment(int x) {
     char filename[16];
     sprintf(filename,  "count%02d.txt", x);
@@ -19,6 +21,7 @@ void increment(int x) {
     fclose(fp);
 }
 
+// decrement function
 void decrement(int x) {
     char filename[16];
     sprintf(filename, "count%02d.txt", x);
@@ -34,7 +37,7 @@ void decrement(int x) {
     fclose(fp);
 }
 
-// Run a string of commands in order
+// Run a string of commands in order (and handle repeats)
 void run_job(void *_commands_str) {
 
     char *commands_str = (char *) _commands_str;
