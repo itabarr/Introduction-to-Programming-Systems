@@ -1,0 +1,9 @@
+tar -czf hw2_208981159_312472129.tgz  main.c main.h job_queue.c job_queue.h Makefile basic_commands.c basic_commands.h
+
+tar -xzf hw2_208981159_312472129.tgz -C HW2
+
+./hw2 cmdfile.txt num_threads num_counters log_enabled
+
+./hw2 ../cmdfile.txt 50 10 1
+
+struct timeval start_time
