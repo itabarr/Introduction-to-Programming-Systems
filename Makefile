@@ -10,9 +10,10 @@ test1:
 	gcc -g -pthread job_queue.c basic_commands.c main.c -o hw2
 
 clean:
-	@find . -type f -name "*.txt" ! -name "cmdfile.txt" -delete
+	@find -type f \( -name 'count*.txt' -o -name 'dispatcher.txt' -o -name 'thread*.txt' -o -name 'stats.txt' \) -delete
 	@rm -f *.o main frumkis_test test itamar_test hw2
 
 clean_txt:
-	@find . -type f -name "*.txt" ! -name "cmdfile.txt" -delete
+	@find -type f \( -name 'count*.txt' -o -name 'dispatcher.txt' -o -name 'thread*.txt' -o -name 'stats.txt' \) -delete
+	
 
