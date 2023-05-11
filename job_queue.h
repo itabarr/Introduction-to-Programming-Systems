@@ -2,6 +2,7 @@
 #define JOB_QUEUE_H
 
 #include <pthread.h>
+#include <sys/time.h>
 
 
 typedef struct Job {
@@ -17,6 +18,7 @@ typedef struct Archive {
     int count;
 } Archive;
 
+
 typedef struct Queue {
     Job *head;
     Job *tail;
@@ -24,6 +26,7 @@ typedef struct Queue {
     pthread_cond_t cond_q_empty;
     pthread_cond_t cond_q_non_empty;
     Archive archive;
+    struct timeval start_time;
 } Queue;
 
 typedef struct {
