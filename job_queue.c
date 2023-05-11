@@ -4,19 +4,26 @@
 #include <sys/time.h>
 #include <limits.h>
 
+
 #include "job_queue.h"
 #include "basic_commands.h"
 
-Queue *create_queue() {
+// Create a new queue
+Queue *create_queue(struct timeval start_time) {
     Queue *queue = (Queue*) malloc(sizeof(Queue));
     queue->head = NULL;
     queue->tail = NULL;
+    queue->start_time = start_time;
+
     pthread_mutex_init(&queue->mutex, NULL);
     pthread_cond_init(&queue->cond_q_non_empty, NULL);
     pthread_cond_init(&queue->cond_q_empty, NULL);
+    
+
     return queue;
 }
 
+// Enqueue a job using mutex and condition variables
 void enqueue(Queue *queue, Job *job) {
     pthread_mutex_lock(&queue->mutex);
     job->next = NULL;
@@ -31,6 +38,7 @@ void enqueue(Queue *queue, Job *job) {
     pthread_mutex_unlock(&queue->mutex);
 }
 
+// Dequeue a job using mutex and condition variables
 Job *dequeue(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
     while (queue->head == NULL) {
@@ -52,16 +60,20 @@ Job *dequeue(Queue *queue) {
     return job;
 }
 
+// Worker thread function - a "container" function that each worker runs all the time
+// that "pulls" jobs from queue
 void *worker_thread(void *arg) {
-    struct timeval start_time, end_time;
+    struct timeval start_time, end_time , current_time;
     ThreadData *data = (ThreadData*) arg;
     Queue *queue = data->queue;
     int create_log = data->create_log;
     int thread_num = data->thread_num;
-
+    long long total_time;
 
     char log_filename[16];
     FILE *log_file = NULL;
+
+    // create logger if needed
     if (create_log) {
         sprintf(log_filename, "thread%02d.txt", thread_num);
         log_file = fopen(log_filename, "w");
@@ -70,15 +82,16 @@ void *worker_thread(void *arg) {
     while (1) {
         Job *job = dequeue(queue);
 
+        // if kill_job detected than end thread (get out of loop)
         if (job->function == kill){
             break;
         }
-
+        
+        // Do logging if needed
         if (create_log) {
-            struct timeval current_time;
             gettimeofday(&current_time, NULL);
-            long long total_time = (current_time.tv_sec - start_time.tv_sec) * 1000LL +
-                (current_time.tv_usec - start_time.tv_usec) / 1000LL;
+            total_time = (current_time.tv_sec - queue->start_time.tv_sec) * 1000LL +
+                (current_time.tv_usec - queue->start_time.tv_usec) / 1000LL;
 
             fprintf(log_file, "TIME %lld: START job %s\n", total_time, job->arg);
         }
@@ -87,11 +100,12 @@ void *worker_thread(void *arg) {
         job->function(job->arg);
         gettimeofday(&job->end_time, NULL);
 
+        // Do logging if needed
         if (create_log) {
             struct timeval current_time;
             gettimeofday(&current_time, NULL);
-            long long total_time = (current_time.tv_sec - start_time.tv_sec) * 1000LL +
-                (current_time.tv_usec - start_time.tv_usec) / 1000LL;
+            total_time = (current_time.tv_sec - queue->start_time.tv_sec) * 1000LL +
+                (current_time.tv_usec - queue->start_time.tv_usec) / 1000LL;
 
             fprintf(log_file, "TIME %lld: END job %s\n", total_time, job->arg);
         }
@@ -106,10 +120,12 @@ void *worker_thread(void *arg) {
     return NULL;
 }
 
+// ghost kill function to kill the kob in the end of the program
 void kill(void *arg){
     
 }
 
+// print archive for debugging
 void print_archive(Archive *archive) {
     printf("Job archive:\n");
     long long elapsed_time = 0;
@@ -128,6 +144,7 @@ void print_archive(Archive *archive) {
     printf("Total jobs in archive: %d\n", archive->count);
 }
 
+// print job stats for debugging
 void print_job_stats(Archive *archive) {
     // Calculate sum, min, max, and count of job turnaround times
     if (archive->head == NULL) {
@@ -166,6 +183,7 @@ void print_job_stats(Archive *archive) {
     printf("Max job turnaround time: %lld milliseconds\n", max_time);
 }
 
+// print archive to file
 void print_job_stats_to_file(Archive *archive, FILE *file) {
     // Calculate sum, min, max, and count of job turnaround times
     if (archive->head == NULL) {
@@ -204,6 +222,7 @@ void print_job_stats_to_file(Archive *archive, FILE *file) {
     fprintf(file, "max job turnaround time: %lld milliseconds\n", max_time);
 }
 
+// add cmnd job to queue
 void add_cmnd_job(Queue *queue, char *cmnd){
     Job *job = (Job*) malloc(sizeof(Job));
     job->function = run_job;
@@ -211,6 +230,7 @@ void add_cmnd_job(Queue *queue, char *cmnd){
     enqueue(queue, job);
 }
 
+// add kill job to queue
 void add_kill_job(Queue *queue){
     Job *job = (Job*) malloc(sizeof(Job));
     job->function = kill;
@@ -220,6 +240,7 @@ void add_kill_job(Queue *queue){
     enqueue(queue, job);
 }
 
+// free queue and all the other dynamic memory objects
 void free_queue(Queue *queue) {
     // Check if queue is empty
     pthread_mutex_lock(&queue->mutex);
@@ -258,6 +279,7 @@ void pthread_create_wrapper(pthread_t *thread, Queue *queue ,int create_log , in
     pthread_create(thread, NULL, worker_thread, thread_data);
 }
 
+// create thread data object that contains diffrent data for each thread
 ThreadData *create_thread_data(Queue *queue, int create_log, int thread_num) {
     ThreadData *data = (ThreadData*) malloc(sizeof(ThreadData));
     data->queue = queue;
@@ -266,10 +288,12 @@ ThreadData *create_thread_data(Queue *queue, int create_log, int thread_num) {
     return data;
 }
 
+// free thread data object
 void free_thread_data(ThreadData *data) {
     free(data);
 }
 
+// wait for queue to be empty function using mutex and condition variable
 void wait_for_queue_empty(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
     while (queue->head != NULL) {
