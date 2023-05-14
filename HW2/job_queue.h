@@ -25,8 +25,10 @@ typedef struct Queue {
     pthread_mutex_t mutex;
     pthread_cond_t cond_q_empty;
     pthread_cond_t cond_q_non_empty;
+    pthread_cond_t cond_no_active_threads;
     Archive archive;
     struct timeval start_time;
+    int active_threads_num;
 } Queue;
 
 typedef struct {
@@ -47,7 +49,8 @@ void add_kill_job(Queue *queue);
 void print_job_stats(Archive *archive);
 void print_job_stats_to_file(Archive *archive, FILE *file);
 void print_archive(Archive *archive);
-void wait_for_queue_empty(Queue *queue);
+void wait_for_non_pending_command(Queue *queue);
+void decrement_active_threads(Queue *queue);
 
 ThreadData *create_thread_data(Queue *queue, int create_log, int thread_num);
 void free_thread_data(ThreadData *data);

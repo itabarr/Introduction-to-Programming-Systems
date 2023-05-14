@@ -59,7 +59,7 @@ void dispatcher_command(char* line, int save_logs, struct Queue *queue , struct 
     } else if (strcmp(start, "wait") == 0) {
         
         //printf("Waiting for queue to be empty\n");
-        wait_for_queue_empty(queue);
+        wait_for_non_pending_command(queue);
    
     } else {    
 

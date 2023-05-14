@@ -14,16 +14,17 @@ Queue *create_queue(struct timeval start_time) {
     queue->head = NULL;
     queue->tail = NULL;
     queue->start_time = start_time;
+    queue->active_threads_num = 0;
 
     pthread_mutex_init(&queue->mutex, NULL);
     pthread_cond_init(&queue->cond_q_non_empty, NULL);
     pthread_cond_init(&queue->cond_q_empty, NULL);
-    
+    pthread_cond_init(&queue->cond_no_active_threads, NULL);
 
     return queue;
 }
 
-// Enqueue a job using mutex and condition variables
+// Enqueue a job using mutex and condition variables 
 void enqueue(Queue *queue, Job *job) {
     pthread_mutex_lock(&queue->mutex);
     job->next = NULL;
@@ -34,11 +35,12 @@ void enqueue(Queue *queue, Job *job) {
         queue->tail->next = job;
         queue->tail = job;
     }
+    
     pthread_cond_signal(&queue->cond_q_non_empty);
     pthread_mutex_unlock(&queue->mutex);
 }
 
-// Dequeue a job using mutex and condition variables
+// Dequeue a job using mutex and condition variables + Increment active threads
 Job *dequeue(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
     while (queue->head == NULL) {
@@ -50,6 +52,10 @@ Job *dequeue(Queue *queue) {
     if (queue->head == NULL) {
         queue->tail = NULL;
     }
+    
+    //increment number of active threads
+    queue->active_threads_num = queue->active_threads_num + 1;
+    printf("active threads: %d\n", queue->active_threads_num);
 
     Archive *archive = &queue->archive;
     job->next = archive->head;
@@ -97,9 +103,17 @@ void *worker_thread(void *arg) {
         }
         
         gettimeofday(&job->start_time, NULL);
+
+        // print job name and thread number and number of active threads
+        printf("Thread %d: Running job \"%s\", active threads: %d\n", thread_num, job->arg, queue->active_threads_num);
+         
         job->function(job->arg);
         gettimeofday(&job->end_time, NULL);
+        
+        //decrement active threads number using mutex
+        decrement_active_threads(queue);
 
+        
         // Do logging if needed
         if (create_log) {
             struct timeval current_time;
@@ -118,6 +132,19 @@ void *worker_thread(void *arg) {
 
     free_thread_data(data);
     return NULL;
+}
+
+// Decrement the active threads number
+void decrement_active_threads(Queue *queue){
+    pthread_mutex_lock(&queue->mutex);
+    queue->active_threads_num--;
+    // print number of active threads for debugging
+    printf("active threads: %d\n", queue->active_threads_num);
+    if (queue->active_threads_num == 0){
+        pthread_cond_signal(&queue->cond_no_active_threads);
+    }
+
+    pthread_mutex_unlock(&queue->mutex);
 }
 
 // ghost kill function to kill the kob in the end of the program
@@ -293,11 +320,20 @@ void free_thread_data(ThreadData *data) {
     free(data);
 }
 
-// wait for queue to be empty function using mutex and condition variable
-void wait_for_queue_empty(Queue *queue) {
+// wait for non pending commands - queue is empty and all no active threads
+void wait_for_non_pending_command(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
-    while (queue->head != NULL) {
-        pthread_cond_wait(&queue->cond_q_empty, &queue->mutex);
+    printf("\n**** Waiting for queue to be empty ***\n\n");
+    pthread_cond_wait(&queue->cond_q_empty, &queue->mutex);
+    pthread_mutex_unlock(&queue->mutex);
+
+    if (queue->active_threads_num > 0) {
+        printf("\n*** Queue is empty, waiting for all threads to finish ***\n\n");
+        pthread_cond_wait(&queue->cond_no_active_threads, &queue->mutex);
+    }
+    
+    else{
+        printf("\n*** Queue is empty and no active threads ***\n\n");
     }
     pthread_mutex_unlock(&queue->mutex);
 }
