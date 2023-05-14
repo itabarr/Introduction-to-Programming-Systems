@@ -55,7 +55,7 @@ Job *dequeue(Queue *queue) {
     
     //increment number of active threads
     queue->active_threads_num = queue->active_threads_num + 1;
-    printf("active threads: %d\n", queue->active_threads_num);
+    //printf("active threads: %d\n", queue->active_threads_num);
 
     Archive *archive = &queue->archive;
     job->next = archive->head;
@@ -105,7 +105,7 @@ void *worker_thread(void *arg) {
         gettimeofday(&job->start_time, NULL);
 
         // print job name and thread number and number of active threads
-        printf("Thread %d: Running job \"%s\", active threads: %d\n", thread_num, job->arg, queue->active_threads_num);
+        //printf("Thread %d: Running job \"%s\", active threads: %d\n", thread_num, job->arg, queue->active_threads_num);
          
         job->function(job->arg);
         gettimeofday(&job->end_time, NULL);
@@ -139,7 +139,7 @@ void decrement_active_threads(Queue *queue){
     pthread_mutex_lock(&queue->mutex);
     queue->active_threads_num--;
     // print number of active threads for debugging
-    printf("active threads: %d\n", queue->active_threads_num);
+    //printf("active threads: %d\n", queue->active_threads_num);
     if (queue->active_threads_num == 0){
         pthread_cond_signal(&queue->cond_no_active_threads);
     }
@@ -323,17 +323,18 @@ void free_thread_data(ThreadData *data) {
 // wait for non pending commands - queue is empty and all no active threads
 void wait_for_non_pending_command(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
-    printf("\n**** Waiting for queue to be empty ***\n\n");
+    //printf("\n**** Waiting for queue to be empty ***\n\n");
     pthread_cond_wait(&queue->cond_q_empty, &queue->mutex);
     pthread_mutex_unlock(&queue->mutex);
-
+    
+    // if is meant to prevent deadlock for dequeueing jobs in edge condition
     if (queue->active_threads_num > 0) {
-        printf("\n*** Queue is empty, waiting for all threads to finish ***\n\n");
+        //printf("\n*** Queue is empty, waiting for all threads to finish ***\n\n");
         pthread_cond_wait(&queue->cond_no_active_threads, &queue->mutex);
     }
     
-    else{
-        printf("\n*** Queue is empty and no active threads ***\n\n");
-    }
+    // else{
+    //     printf("\n*** Queue is empty and no active threads ***\n\n");
+    // }
     pthread_mutex_unlock(&queue->mutex);
 }
