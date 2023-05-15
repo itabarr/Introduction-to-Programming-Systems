@@ -11,6 +11,8 @@
 #include "job_queue.h"
 #include "main.h"
 
+#include "global_counter_mutex_list.h"
+
 #define NUM_COUNTERS  100
 #define NUM_THREADS 4096
 #define MAX_JOB_WDT 1024
@@ -124,6 +126,19 @@ void write_stats_file(long long total_elapsed_time, FILE *file) {
     fprintf(file, "total running time: %lld milliseconds\n", total_elapsed_time);
 }
 
+
+void initialize_mutex_list(int num_mutexes) {
+    for (int i = 0; i < num_mutexes; i++) {
+        pthread_mutex_init(&mutex_list[i], NULL);
+    }
+}
+
+void destroy_mutex_list(int num_mutexes) {
+    for (int i = 0; i < num_mutexes; i++) {
+        pthread_mutex_destroy(&mutex_list[i]);
+    }
+}
+
 // main function
 int main(int argc, char *argv[]) {
 	FILE* fp;
@@ -158,6 +173,8 @@ int main(int argc, char *argv[]) {
     num_counters = atoi(argv[3]);
     save_logs = atoi(argv[4]);
 	
+    initialize_mutex_list(num_counters);
+
     //checking for input errors
     if (num_threads < 1 || num_threads > NUM_THREADS) {
         printf("Wrong number of threads: %d", num_threads);
@@ -204,6 +221,7 @@ int main(int argc, char *argv[]) {
     
     // Free queue (and it's archive and jobs)
     free_queue(queue);
+    destroy_mutex_list(num_counters);
 
     return 0;
 }

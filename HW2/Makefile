@@ -1,7 +1,7 @@
 all: main
 
 main: 
-	@gcc -g -pthread job_queue.c basic_commands.c main.c -o hw2
+	@gcc -g -pthread job_queue.c basic_commands.c main.c global_counter_mutex_list.c -o hw2
 
 itamar_test:
 	gcc -g -pthread job_queue.c basic_commands.c mock_init.c -o itamar_test

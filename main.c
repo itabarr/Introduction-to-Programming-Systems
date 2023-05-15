@@ -126,13 +126,14 @@ void write_stats_file(long long total_elapsed_time, FILE *file) {
     fprintf(file, "total running time: %lld milliseconds\n", total_elapsed_time);
 }
 
-
+// init mutex list given the number of mutexes to the global mutex list
 void initialize_mutex_list(int num_mutexes) {
     for (int i = 0; i < num_mutexes; i++) {
         pthread_mutex_init(&mutex_list[i], NULL);
     }
 }
 
+// destroy mutex list given the number of mutexes to the global mutex list
 void destroy_mutex_list(int num_mutexes) {
     for (int i = 0; i < num_mutexes; i++) {
         pthread_mutex_destroy(&mutex_list[i]);

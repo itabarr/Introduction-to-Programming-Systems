@@ -1,4 +1,4 @@
-tar -czf hw2_208981159_312472129.tgz  main.c main.h job_queue.c job_queue.h Makefile basic_commands.c basic_commands.h hw2_208981159_312472129.pdf test.txt
+tar -czf hw2_208981159_312472129.tgz  main.c main.h job_queue.c job_queue.h Makefile basic_commands.c basic_commands.h hw2_208981159_312472129.pdf test.txt global_counter_mutex_list.h global_counter_mutex_list.c
 
 tar -xzf hw2_208981159_312472129.tgz -C HW2
 
