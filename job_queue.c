@@ -325,7 +325,6 @@ void wait_for_non_pending_command(Queue *queue) {
     pthread_mutex_lock(&queue->mutex);
     //printf("\n**** Waiting for queue to be empty ***\n\n");
     pthread_cond_wait(&queue->cond_q_empty, &queue->mutex);
-    pthread_mutex_unlock(&queue->mutex);
     
     // if is meant to prevent deadlock for dequeueing jobs in edge condition
     if (queue->active_threads_num > 0) {
