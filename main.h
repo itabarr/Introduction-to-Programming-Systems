@@ -21,9 +21,10 @@
 int is_not_worker(char* first_term);
 void create_counter_files(int num_counters);
 void create_threads(pthread_t* thread_ptrs,struct Queue* queue, int num_threads, int save_logs);
-int count_worker_lines(FILE* fp);
 void dispatcher_command(char*line, int save_logs, struct Queue *queue , struct timeval start_time);
 void handle_command(char* line, int save_logs, Queue *queue , struct timeval start_time);
+void initialize_mutex_list(int num_counters);
+void destroy_mutex_list(int num_counters);
 
 // Stats
 FILE* create_stats_file();

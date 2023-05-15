@@ -1,4 +1,7 @@
 #include "basic_commands.h"
+#include "global_counter_mutex_list.h"
+#include <pthread.h>
+
 #define MAX_COMMANDS 1024
 
 // msleep function 
@@ -10,15 +13,20 @@ void msleep(int x) {
 void increment(int x) {
     char filename[16];
     sprintf(filename,  "count%02d.txt", x);
-    FILE *fp = fopen(filename, "r+");
 
+    // lock the mutex
+    pthread_mutex_lock(&mutex_list[x]);
+
+    FILE *fp = fopen(filename, "r+");
     long long count;
     fscanf(fp, "%lld", &count);
     count++;
     fseek(fp, 0, SEEK_SET);
     fprintf(fp, "%lld", count);
-
     fclose(fp);
+
+    // unlock the mutex
+    pthread_mutex_unlock(&mutex_list[x]);
 }
 
 // decrement function
@@ -26,15 +34,19 @@ void decrement(int x) {
     char filename[16];
     sprintf(filename, "count%02d.txt", x);
 
-    FILE *fp = fopen(filename, "r+");
+    // lock the mutex
+    pthread_mutex_lock(&mutex_list[x]);
 
+    FILE *fp = fopen(filename, "r+");
     long long count;
     fscanf(fp, "%lld", &count);
     count--;
     fseek(fp, 0, SEEK_SET);
     fprintf(fp, "%lld", count);
-
     fclose(fp);
+
+    // unlock the mutex
+    pthread_mutex_unlock(&mutex_list[x]);
 }
 
 // Run a string of commands in order (and handle repeats)
