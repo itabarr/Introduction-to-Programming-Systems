@@ -1,3 +1,5 @@
+#include "processInfo.h"
+
 struct stat;
 struct rtcdate;
 
@@ -37,3 +39,7 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+int getNumProc(void);
+int getMaxPid(void);
+int getProcInfo(int, struct processInfo *);
+//int getProcInfo(int, struct uproc*);

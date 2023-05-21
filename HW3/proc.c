@@ -7,6 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -211,7 +212,7 @@ fork(void)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
   pid = np->pid;
-
+  np->nrswitch = 0;
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
@@ -343,7 +344,11 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
+      // increment nrswitch for new scheduled process
+      p->nrswitch++;
+
       swtch(&(c->scheduler), p->context);
+      
       switchkvm();
 
       // Process is done running for now.
@@ -532,3 +537,83 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+// get the number of active processes
+int getNumProc(void) {
+  struct proc *p;
+  int count = 0;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != UNUSED)
+      count++;
+  }
+  release(&ptable.lock);
+
+  return count;
+}
+
+// get the maximum pid
+int getMaxPid(void) {
+  struct proc *p;
+  int maxPid = -1;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != UNUSED && p->pid > maxPid)
+      maxPid = p->pid;
+  }
+  release(&ptable.lock);
+
+  return maxPid;
+}
+
+
+// get the process info for a given pid
+int getProcInfo(int pid, struct processInfo *pi) {
+  struct proc *p;
+  int found = 0;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+      pi->state = p->state;
+      pi->ppid = p->parent ? p->parent->pid : 0;
+      pi->sz = p->sz;
+      pi->nfd = countUniqueOpenFiles(p->ofile);
+      pi->nrswitch = p->nrswitch;
+      found = 1;
+      break;
+    }
+  }
+  release(&ptable.lock);
+
+  if(!found)
+    return -1;
+
+  return 0;
+}
+
+
+int countUniqueOpenFiles(struct file *ofile[NOFILE]) {
+    int count = 0;
+
+    for (int i = 0; i < NOFILE; i++) {
+        if (ofile[i] != 0) {
+            int isUnique = 1;
+            for (int j = 0; j < i; j++) {
+                if (ofile[j] != 0 && ofile[j] == ofile[i]) {
+                    isUnique = 0;
+                    break;
+                }
+            }
+            if (isUnique) {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+

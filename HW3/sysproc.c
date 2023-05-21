@@ -89,3 +89,25 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+
+// define a new system call of getNumProc that uses getNumProc() in proc.c
+int sys_getNumProc(void) {
+  return getNumProc();
+}
+
+// define a new system call of getMaxPid that uses getMaxPid() in proc.c
+int sys_getMaxPid(void) {
+  return getMaxPid();
+}
+
+// define a new system call of getProcInfo that uses getProcInfo() in proc.c
+int sys_getProcInfo(void) {
+  int pid;
+  struct processInfo* pi;
+
+  if(argint(0, &pid) < 0 || argptr(1, (void*)&pi, sizeof(*pi)) < 0)
+    return -1;
+
+  return getProcInfo(pid, pi);
+}

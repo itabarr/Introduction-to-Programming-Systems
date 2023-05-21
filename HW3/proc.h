@@ -1,3 +1,6 @@
+#include "processInfo.h"
+
+
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -49,7 +52,13 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int nrswitch;                // number of context switches in
 };
+
+int getNumProc(void);
+int getMaxPid(void);
+int getProcInfo(int pid, struct processInfo* pi);
+int countUniqueOpenFiles(struct file *ofile[NOFILE]);
 
 // Process memory is laid out contiguously, low addresses first:
 //   text
