@@ -7,3 +7,8 @@ tar -xzf hw2_208981159_312472129.tgz -C HW2
 ./hw2 test.txt 50 10 1
 
 struct timeval start_time
+
+tar -czf ../hw3_208981159_312472129.tgz 
+
+tar -xzf hw3_208981159_312472129.tgz -C HW3
+
