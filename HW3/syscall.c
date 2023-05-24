@@ -103,6 +103,8 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
+
+// External functions for HW3
 extern int sys_getNumProc(void);
 extern int sys_getMaxPid(void);
 extern int sys_getProcInfo(void);
@@ -134,6 +136,8 @@ static int (*syscalls[])(void) = {
 [SYS_getMaxPid] sys_getMaxPid,
 [SYS_getProcInfo] sys_getProcInfo,
 };
+
+// edited above line for system call for HW3
 
 void
 syscall(void)

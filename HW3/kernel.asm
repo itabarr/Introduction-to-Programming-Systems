@@ -9764,8 +9764,8 @@ argstr(int n, char **pp)
 80104bff:	90                   	nop
 
 80104c00 <syscall>:
-[SYS_getProcInfo] sys_getProcInfo,
-};
+
+// edited above line for system call for HW3
 
 void
 syscall(void)
@@ -11590,6 +11590,7 @@ int sys_getProcInfo(void) {
   int pid;
   struct processInfo* pi;
 
+  // fetch the arguments from the user stack to kernel memory to call getProcInfo() and validate the arguments
   if(argint(0, &pid) < 0 || argptr(1, (void*)&pi, sizeof(*pi)) < 0)
 80105a06:	8d 45 f0             	lea    -0x10(%ebp),%eax
 80105a09:	50                   	push   %eax

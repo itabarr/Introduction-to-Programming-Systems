@@ -106,6 +106,7 @@ int sys_getProcInfo(void) {
   int pid;
   struct processInfo* pi;
 
+  // fetch the arguments from the user stack to kernel memory to call getProcInfo() and validate the arguments
   if(argint(0, &pid) < 0 || argptr(1, (void*)&pi, sizeof(*pi)) < 0)
     return -1;
 

@@ -1,3 +1,4 @@
+// import process info struct
 #include "processInfo.h"
 
 struct stat;
@@ -39,6 +40,8 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
+// define new user space calls
 int getNumProc(void);
 int getMaxPid(void);
 int getProcInfo(int, struct processInfo *);

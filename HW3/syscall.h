@@ -24,3 +24,4 @@
 #define SYS_getMaxPid 23
 #define SYS_getProcInfo 24
 
+// edited above line for system call for HW3. Added 3 lines of SYS_getNumProc, SYS_getMaxPid, SYS_getProcInfo

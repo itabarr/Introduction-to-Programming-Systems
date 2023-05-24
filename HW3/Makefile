@@ -183,6 +183,9 @@ UPROGS=\
 	_zombie\
 	_ps\
 	_sleep\
+	_open_file\
+
+#Edited above lines to add _ps _sleep _open_file programs
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -255,7 +258,10 @@ EXTRA=\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
-	ps.c sleep.c\
+	ps.c sleep.c open_file.c\
+
+#Edited above lines to add _ps _sleep _open_file programs
+
 
 dist:
 	rm -rf dist

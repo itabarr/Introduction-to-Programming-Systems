@@ -33,3 +33,4 @@ SYSCALL(getNumProc)
 SYSCALL(getMaxPid)
 SYSCALL(getProcInfo)
 
+#define above the system call table

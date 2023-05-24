@@ -55,6 +55,8 @@ struct proc {
   int nrswitch;                // number of context switches in
 };
 
+
+// Define function to be used in proc.c
 int getNumProc(void);
 int getMaxPid(void);
 int getProcInfo(int pid, struct processInfo* pi);

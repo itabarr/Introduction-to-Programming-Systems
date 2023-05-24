@@ -212,7 +212,10 @@ fork(void)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
   pid = np->pid;
+
+  // init nrswitch to 0 for the new process
   np->nrswitch = 0;
+
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
