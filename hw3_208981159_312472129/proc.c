@@ -583,7 +583,14 @@ int getProcInfo(int pid, struct processInfo *pi) {
       pi->state = p->state;
       pi->ppid = p->parent ? p->parent->pid : 0;
       pi->sz = p->sz;
-      pi->nfd = countUniqueOpenFiles(p->ofile);
+      pi->nfd = 0;
+
+      // count the number of open files descriptors
+      for(int i = 0; i < NOFILE; i++) {
+        if(p->ofile[i])
+          pi->nfd++;
+      }
+
       pi->nrswitch = p->nrswitch;
       found = 1;
       break;
@@ -598,25 +605,5 @@ int getProcInfo(int pid, struct processInfo *pi) {
 }
 
 
-int countUniqueOpenFiles(struct file *ofile[NOFILE]) {
-    int count = 0;
-
-    for (int i = 0; i < NOFILE; i++) {
-        if (ofile[i] != 0) {
-            int isUnique = 1;
-            for (int j = 0; j < i; j++) {
-                if (ofile[j] != 0 && ofile[j] == ofile[i]) {
-                    isUnique = 0;
-                    break;
-                }
-            }
-            if (isUnique) {
-                count++;
-            }
-        }
-    }
-
-    return count;
-}
 
 

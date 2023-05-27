@@ -60,7 +60,6 @@ struct proc {
 int getNumProc(void);
 int getMaxPid(void);
 int getProcInfo(int pid, struct processInfo* pi);
-int countUniqueOpenFiles(struct file *ofile[NOFILE]);
 
 // Process memory is laid out contiguously, low addresses first:
 //   text
