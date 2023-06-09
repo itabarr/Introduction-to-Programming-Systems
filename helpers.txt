@@ -14,6 +14,6 @@ tar -czf ../hw3_208981159_312472129.tgz
 tar -czf hw3_208981159_312472129.tgz  hw3_208981159_312472129.pdf hw3_208981159_312472129
 
 tar -xzf hw3_208981159_312472129.tgz -C HW3
-cp -R org-xv6-public mod-xv6-public
-cp -R HW3/hw3_208981159_312472129/. mod-xv6-public 
+cp -R org-xv6-public/. mod-xv6-public
+cp -R hw4_208981159_312472129/. mod-xv6-public 
 mv 

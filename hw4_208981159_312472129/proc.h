@@ -1,6 +1,3 @@
-#include "processInfo.h"
-
-
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -11,7 +8,6 @@ struct cpu {
   int ncli;                    // Depth of pushcli nesting.
   int intena;                  // Were interrupts enabled before pushcli?
   struct proc *proc;           // The process running on this cpu or null
-  
 };
 
 extern struct cpu cpus[NCPU];
@@ -53,15 +49,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int nrswitch;                // number of context switches in
-  int priority;                // The priority of the process
 };
-
-
-// Define function to be used in proc.c
-int getNumProc(void);
-int getMaxPid(void);
-int getProcInfo(int pid, struct processInfo* pi);
 
 // Process memory is laid out contiguously, low addresses first:
 //   text
