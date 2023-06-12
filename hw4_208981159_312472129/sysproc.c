@@ -90,30 +90,19 @@ sys_uptime(void)
   return xticks;
 }
 
+// define the system calls for setprio and getprio
+int sys_setprio(void)
+{
+  int priority;
 
-// add setprio system call
-void setprio(int prio){
-  struct proc *curproc = myproc();
+  // set priority to the value of the first argument
+  if(argint(0, &priority) < 0)
+    return -1;
 
-  // set priority to be 2^prio
-  for (int i = 0; i < prio; i++){
-    curproc->priority *= 2;
-  }
-  
+  return setprio(priority);
 }
 
-// add getprio system call
-int getprio(){
-  struct proc *curproc = myproc();
-
-  // retunn log2(priority)
-  int prio = 0;
-  int priority = curproc->priority;
-  while (priority > 1){
-    priority /= 2;
-    prio++;
-  } 
-
-  return prio;
-
+int sys_getprio(void)
+{
+  return myproc()->priority;
 }

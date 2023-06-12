@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 0; // default priority
 
   release(&ptable.lock);
 
@@ -322,6 +323,7 @@ wait(void)
 void
 scheduler(void)
 {
+  int ticks; // ticks counter
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
@@ -336,19 +338,34 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+      ticks = 1<<p->priority; // set ticks to 2^priority with bit shifting
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+      // Run process for ticks 
+      while (ticks > 0) { // loop until ticks is 0
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+
+        // if process is not runnable - something is wrong or process is done before ticks  
+        // break out of loop
+
+        if (p->state != RUNNABLE) { 
+          break; 
+        }
+
+        ticks--; // decrement ticks
+      }
+
     }
     release(&ptable.lock);
 
@@ -531,4 +548,23 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+// set priority of process
+int setprio(int priority) {
+  // acquire lock
+  acquire(&ptable.lock);
+
+  // check if priority is valid
+  if (priority < 0 || priority > 7) {
+    release(&ptable.lock);
+    return 1;
+  }
+
+  // set priority
+  myproc()->priority = priority;
+
+  // release lock
+  release(&ptable.lock);
+  return 0;
 }

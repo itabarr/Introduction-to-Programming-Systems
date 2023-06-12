@@ -16,4 +16,7 @@ clean:
 clean_txt:
 	@find -type f \( -name 'count*.txt' -o -name 'dispatcher.txt' -o -name 'thread*.txt' -o -name 'stats.txt' \) -delete
 	
+build:
+	sudo cp -R org-xv6-public/. mod-xv6-public
+	sudo cp -R hw4_208981159_312472129/. mod-xv6-public 
 

@@ -103,7 +103,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-extern int sys_setprio(int);
+extern int sys_setprio(void);
 extern int sys_getprio(void);
 
 static int (*syscalls[])(void) = {
