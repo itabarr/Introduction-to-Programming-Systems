@@ -7,7 +7,7 @@
 
 
 // Function to read the directory entries
-void read_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
+void print_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
     char line[MAX_LINE_LEN];
     char name[MSDOS_NAME + 1];
     char time_str[9]; // enough space for "HH:MM AM\0"
@@ -69,6 +69,35 @@ void read_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
     }
 }
 
+// Function to check if a file exists in the root directory. returns 1 if exists, 0 if not
+int check_if_file_exists(FILE* img_file, struct fat_boot_sector* boot_sector, char* file_name){
+    char name[MSDOS_NAME + 1];
+
+    fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
+
+    for (int i = 0; i < boot_sector->dir_entries[0]; i++) {
+        struct msdos_dir_entry dir_entry;
+        fread(&dir_entry, sizeof(struct msdos_dir_entry), 1, img_file);
+
+        if (dir_entry.name[0] == 0x00) {  // End of directory
+            break;
+        }
+        if (dir_entry.name[0] == 0xE5) {  // Deleted file, skip it
+            continue;
+        }
+        if (dir_entry.attr & ATTR_VOLUME) {  // Volume label, skip it
+            continue;
+        }
+
+        fat_name_to_normal_name(dir_entry.name, name);
+
+        if (strcmp(name, file_name) == 0) {
+            return 1 ;
+        }
+
+    return 0;
+}
+}
 
 // Function to convert ctime to a string
 void time_to_string(__le16 ctime , char* time_str) {
@@ -146,7 +175,7 @@ void format_number(__le32 num, char *str) {
 // Main function
 int main(int argc, char* argv[]) {
 
-    FILE* img_file = fopen("floppy.img", "rb");
+    FILE* img_file = fopen(argv[1], "rb");
     if (!img_file) {
         perror("Error opening image file");
         return 1;
@@ -155,7 +184,16 @@ int main(int argc, char* argv[]) {
     struct fat_boot_sector boot_sector;
     fread(&boot_sector, sizeof(struct fat_boot_sector), 1, img_file);
 
-    read_root_dir(img_file, &boot_sector);
+    if (strcmp(argv[2], "dir") == 0) {
+        print_root_dir(img_file, &boot_sector);
+    
+    if (strcmp(argv[2], "cp") == 0) {
+        char* file_name = ;
+        char* local_file_name = argv[4];
+        
+        int file_exists = check_if_file_exists(img_file, &boot_sector, argv[3]);
+    }
+
 
     fclose(img_file);
     return 0;
