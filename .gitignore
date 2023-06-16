@@ -3,3 +3,4 @@ sleep-and-print.sh
 file.txt
 mock_init.c
 itamar_test
+.old/*
