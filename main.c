@@ -18,7 +18,14 @@ void print_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
     time_str[8] = '\0';
     date_str[10] = '\0';
 
+    
     fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
+
+    // print the number of sectors allocated before the root directory
+    printf("Root directory starts at sector %d\n", (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length));
+    
+    // print the nuber of sectors allocated for the root directory
+    printf("Root directory occupies %d sectors\n", boot_sector->dir_entries[0] * sizeof(struct msdos_dir_entry) / SECTOR_SIZE);
 
     for (int i = 0; i < boot_sector->dir_entries[0]; i++) {
         struct msdos_dir_entry dir_entry;
@@ -70,7 +77,7 @@ void print_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
 }
 
 // Function to check if a file exists in the root directory. returns 1 if exists, 0 if not
-int check_if_file_exists(FILE* img_file, struct fat_boot_sector* boot_sector, char* file_name){
+__le16 get_file_entry(FILE* img_file, struct fat_boot_sector* boot_sector, char* file_name){
     char name[MSDOS_NAME + 1];
 
     fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
@@ -89,14 +96,80 @@ int check_if_file_exists(FILE* img_file, struct fat_boot_sector* boot_sector, ch
             continue;
         }
 
+        if (dir_entry.attr & ATTR_DIR){ // Directory, skip it
+            continue;
+        }
+
         fat_name_to_normal_name(dir_entry.name, name);
 
         if (strcmp(name, file_name) == 0) {
-            return 1 ;
+            return dir_entry.start;
+        }
+    }
+    return 0;
+
+}
+
+
+__le16 get_next_entry(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 current_entry){
+    __le32 next_entry;
+    __le16 fat_entry = boot_sector->reserved * SECTOR_SIZE;
+    __le16 entry_offset = (current_entry / 2) * 3;
+    __le16 rem = current_entry % 2;
+    __le16 fat_entry_offset = fat_entry + entry_offset;
+
+    fseek(img_file, fat_entry_offset , SEEK_SET);
+    fread(&next_entry, sizeof(__le32), 1, img_file);
+
+    next_entry = next_entry & 0x00FFFFFF;
+    next_entry = (next_entry >> (12*rem)) & 0x0FFF;
+
+    return next_entry;
+}
+
+// Function to print all the clusters of a file
+void print_clusters(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 start_entry){
+    __le16 current_entry = start_entry;
+    __le16 next_entry;
+
+    char* buffer = malloc(sizeof(char) * 512);
+    //create new file 
+    FILE* new_file = fopen("new_file.pdf", "w");
+
+    // write first entry to file
+    fseek(img_file, (33 - 2 + current_entry) * SECTOR_SIZE , SEEK_SET);
+    fread(buffer, sizeof(char), 512, img_file);
+    fwrite(buffer, sizeof(char), 512, new_file);
+    
+    while (current_entry < 0xFF8){
+        next_entry = get_next_entry(img_file, boot_sector, current_entry);
+        
+        if (next_entry == 0 | next_entry == 1){
+            printf("Current entry: %d, Next entry: %d, 0x%03X\n", current_entry, next_entry, next_entry);
+            printf("Unused Entry.\n");
+            break;
         }
 
-    return 0;
-}
+        if (next_entry >= 0xFF8){
+            printf("Current entry: %d, Next entry: %d, 0x%03X\n", current_entry, next_entry, next_entry);
+            printf("End of file.\n");
+            break;
+        }
+
+        // print current index , cluster in int and in 3 hex digits
+        printf("Current entry: %d, Next entry: %d, 0x%03X\n", current_entry, next_entry, next_entry);
+
+        current_entry = next_entry;
+
+        fseek(img_file, (33 - 2 + current_entry) * SECTOR_SIZE , SEEK_SET);
+        fread(buffer, sizeof(char), 512, img_file);
+        fwrite(buffer, sizeof(char), 512, new_file);
+
+    }
+
+    fclose(new_file);
+    free(buffer);
+    return;
 }
 
 // Function to convert ctime to a string
@@ -175,25 +248,43 @@ void format_number(__le32 num, char *str) {
 // Main function
 int main(int argc, char* argv[]) {
 
-    FILE* img_file = fopen(argv[1], "rb");
+    // Open the image file
+    FILE* img_file = fopen("floppy.img", "rb");
     if (!img_file) {
         perror("Error opening image file");
         return 1;
     }
 
+    // Read the boot sector 
     struct fat_boot_sector boot_sector;
     fread(&boot_sector, sizeof(struct fat_boot_sector), 1, img_file);
 
+    // check if dir - if so print root dir
     if (strcmp(argv[2], "dir") == 0) {
         print_root_dir(img_file, &boot_sector);
-    
-    if (strcmp(argv[2], "cp") == 0) {
-        char* file_name = ;
-        char* local_file_name = argv[4];
-        
-        int file_exists = check_if_file_exists(img_file, &boot_sector, argv[3]);
     }
 
+    __le16 start_entry = get_file_entry(img_file, &boot_sector, "FAT.PDF");
+
+    print_clusters(img_file, &boot_sector, start_entry);
+
+    // check if cp - if so do the copy
+    if (strcmp(argv[2], "cp") == 0) {
+        char* file_name = argv[3];
+        __le16 start_entry = get_file_entry(img_file, &boot_sector, argv[3]);
+        __le16 next_entry = get_next_entry(img_file, &boot_sector, start_entry);
+
+        if (start_entry == 0) {
+            printf("File %s does not exist in the root directory\n", file_name);
+            return 1;
+        }
+
+        else{
+            // print file name and file entry
+            printf("File %s found, starting cluster number: %d\n", file_name, start_entry);
+        }
+    }
+    
 
     fclose(img_file);
     return 0;
