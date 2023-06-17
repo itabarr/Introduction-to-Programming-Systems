@@ -7,3 +7,4 @@ void format_number(__le32 num, char *str);
 void print_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector);
 __le16 get_file_entry(FILE* img_file, struct fat_boot_sector* boot_sector, char* file_name);
 void extract_file_from_fat12(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 start_entry , char * name);
+void str_to_upper_case(char* str);

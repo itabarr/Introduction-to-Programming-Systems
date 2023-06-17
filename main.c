@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
+
 #include "msdos_fs.h"
 #include "main.h"
 
-//TODO : handle lower case for naming (dir and cp)
 //TODO : check if there is an EOF inside the sector - and it needs to be handled
 
 // Function to read the directory entries
@@ -244,7 +245,7 @@ void format_number(__le32 num, char *str) {
 // check if a file is in the root directory
 int check_if_file_in_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector , char *file_name) {
     char name[MSDOS_NAME + 1];
-    
+
     fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
 
     for (int i = 0; i < boot_sector->dir_entries[0]; i++) {
@@ -274,6 +275,16 @@ int check_if_file_in_root_dir(FILE* img_file, struct fat_boot_sector* boot_secto
     return 0;
 }
 
+// convert string to upper case
+void str_to_upper_case(char* str) {
+    int i = 0;
+    while(str[i] != '\0') {
+        str[i] = toupper(str[i]);
+        i++;
+    }
+    return;
+}
+
 // Main function
 int main(int argc, char* argv[]) {
 
@@ -295,6 +306,9 @@ int main(int argc, char* argv[]) {
 
     // check if cp - if so do the copy
     if (strcmp(argv[2], "cp") == 0) {
+        
+        // convert file name to upper case
+        str_to_upper_case(argv[3]);
 
         // check if file exists in root dir
         if (check_if_file_in_root_dir(img_file, &boot_sector, argv[3]) == 0) {
