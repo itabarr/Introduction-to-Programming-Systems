@@ -288,11 +288,13 @@ void str_to_upper_case(char* str) {
 // Main function
 int main(int argc, char* argv[]) {
 
+    // check number of arguments
     if (argc < 3 || argc > 5) {
         printf("Program takes 2 to 4 arguments.\n");
         return 1;
     }
 
+    // check if second argument is dir or cp
     if (strcmp(argv[2], "dir") != 0 && strcmp(argv[2], "cp") != 0) {
         printf("Second argument must be either 'dir' or 'cp'.\n");
         return 1;
@@ -317,6 +319,7 @@ int main(int argc, char* argv[]) {
     // check if cp - if so do the copy
     if (strcmp(argv[2], "cp") == 0) {
         
+        // check number of arguments
         if (argc !=5){
             printf("For 'cp' cammnd, program needs to have <src> and <dest> arguments.\n");
             return 1;
@@ -331,6 +334,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
+        // do the copy  
         __le16 start_entry = get_file_entry(img_file, &boot_sector, argv[3]);
         extract_file_from_fat12(img_file, &boot_sector, start_entry , argv[4]);
     }
