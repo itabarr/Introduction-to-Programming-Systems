@@ -289,7 +289,7 @@ void str_to_upper_case(char* str) {
 int main(int argc, char* argv[]) {
 
     // Open the image file
-    FILE* img_file = fopen("floppy.img", "rb");
+    FILE* img_file = fopen(argv[1], "rb");
     if (!img_file) {
         perror("Error opening image file");
         return 1;
