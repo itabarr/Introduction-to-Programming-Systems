@@ -23,8 +23,9 @@ void print_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
 
     fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
 
+    struct msdos_dir_entry dir_entry;
     for (int i = 0; i < boot_sector->dir_entries[0]; i++) {
-        struct msdos_dir_entry dir_entry;
+        
         fread(&dir_entry, sizeof(struct msdos_dir_entry), 1, img_file);
 
         if (dir_entry.name[0] == 0x00) {  // End of directory
@@ -78,8 +79,9 @@ __le16 get_file_entry(FILE* img_file, struct fat_boot_sector* boot_sector, char*
 
     fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
 
+    struct msdos_dir_entry dir_entry;
     for (int i = 0; i < boot_sector->dir_entries[0]; i++) {
-        struct msdos_dir_entry dir_entry;
+        
         fread(&dir_entry, sizeof(struct msdos_dir_entry), 1, img_file);
 
         if (dir_entry.name[0] == 0x00) {  // End of directory
@@ -107,16 +109,20 @@ __le16 get_file_entry(FILE* img_file, struct fat_boot_sector* boot_sector, char*
 }
 
 // get the next entry in the FAT table
-__le16 get_next_entry(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 current_entry){
+__le32 get_next_entry(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 current_entry){
     __le32 next_entry;
+
+    // calculate the offset of the current entry in the FAT table
     __le16 fat_entry = boot_sector->reserved * SECTOR_SIZE;
     __le16 entry_offset = (current_entry / 2) * 3;
     __le16 rem = current_entry % 2;
     __le16 fat_entry_offset = fat_entry + entry_offset;
-
+    
+    // read the entry from the FAT table
     fseek(img_file, fat_entry_offset , SEEK_SET);
     fread(&next_entry, sizeof(__le32), 1, img_file);
 
+    // bit manipulation to get the next entry
     next_entry = next_entry & 0x00FFFFFF;
     next_entry = (next_entry >> (12*rem)) & 0x0FFF;
 
@@ -126,15 +132,17 @@ __le16 get_next_entry(FILE* img_file, struct fat_boot_sector* boot_sector, __le1
 // extract file from fat12 img, given the start entry
 // do the whole sectors "logic thing"
 void extract_file_from_fat12(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 start_entry , char * name){
-    __le16 current_entry = start_entry;
-    __le16 next_entry;
+    // start entry is the first entry of the file - do everything in 32 bit for simplicity
+    __le32 current_entry = (__le32)start_entry;
+    __le32 next_entry;
 
-    char* buffer = malloc(sizeof(char) * 512);
-    //create new file 
+    char buffer[SECTOR_SIZE];
     FILE* new_file = fopen(name, "w");
 
     // write first entry to file
-    fseek(img_file, (33 - 2 + current_entry) * SECTOR_SIZE , SEEK_SET);
+    fseek(img_file, (FIXED_OFFSET + current_entry) * SECTOR_SIZE , SEEK_SET);
+
+    // read to buffer and write to new file
     fread(buffer, sizeof(char), 512, img_file);
     fwrite(buffer, sizeof(char), 512, new_file);
     
@@ -158,14 +166,14 @@ void extract_file_from_fat12(FILE* img_file, struct fat_boot_sector* boot_sector
 
         current_entry = next_entry;
 
-        fseek(img_file, (33 - 2 + current_entry) * SECTOR_SIZE , SEEK_SET);
-        fread(buffer, sizeof(char), 512, img_file);
-        fwrite(buffer, sizeof(char), 512, new_file);
+        // seek , read and write (as above)
+        fseek(img_file, (FIXED_OFFSET + current_entry) * SECTOR_SIZE , SEEK_SET);
+        fread(buffer, sizeof(char), SECTOR_SIZE, img_file);
+        fwrite(buffer, sizeof(char), SECTOR_SIZE, new_file);
 
     }
 
     fclose(new_file);
-    free(buffer);
     return;
 }
 
