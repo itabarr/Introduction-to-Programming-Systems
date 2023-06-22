@@ -74,7 +74,7 @@ void print_root_dir(FILE* img_file, struct fat_boot_sector* boot_sector) {
 }
 
 // check if a file exists in the root directory. returns 1 if exists, 0 if not
-__le16 get_file_entry(FILE* img_file, struct fat_boot_sector* boot_sector, char* file_name){
+void get_file_info(FILE* img_file, struct fat_boot_sector* boot_sector, char* file_name , __le16* start_entry , __le32* file_size){
     char name[MSDOS_NAME + 1];
 
     fseek(img_file, (boot_sector->reserved + boot_sector->fats * boot_sector->fat_length) * SECTOR_SIZE, SEEK_SET);
@@ -101,10 +101,12 @@ __le16 get_file_entry(FILE* img_file, struct fat_boot_sector* boot_sector, char*
         fat_name_to_normal_name(dir_entry.name, name);
 
         if (strcmp(name, file_name) == 0) {
-            return dir_entry.start;
+            *start_entry = dir_entry.start;
+            *file_size = dir_entry.size;
+            return;
         }
     }
-    return 0;
+    return;
 
 }
 
@@ -131,45 +133,35 @@ __le32 get_next_entry(FILE* img_file, struct fat_boot_sector* boot_sector, __le1
 
 // extract file from fat12 img, given the start entry
 // do the whole sectors "logic thing"
-void extract_file_from_fat12(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 start_entry , char * name){
+void extract_file_from_fat12(FILE* img_file, struct fat_boot_sector* boot_sector, __le16 start_entry , char * name , __le32 file_size){
     // start entry is the first entry of the file - do everything in 32 bit for simplicity
     __le32 current_entry = (__le32)start_entry;
     __le32 next_entry;
+    __le32 rem = file_size % SECTOR_SIZE;
 
     char buffer[SECTOR_SIZE];
     FILE* new_file = fopen(name, "w");
-
-    // write first entry to file
-    fseek(img_file, (FIXED_OFFSET + current_entry) * SECTOR_SIZE , SEEK_SET);
-
-    // read to buffer and write to new file
-    fread(buffer, sizeof(char), 512, img_file);
-    fwrite(buffer, sizeof(char), 512, new_file);
     
-    while (current_entry < 0xFF8){
+    // loop until the end of the file
+    while (current_entry < 0xFF8 & current_entry != 0 & current_entry != 1){
         next_entry = get_next_entry(img_file, boot_sector, current_entry);
         
-        if (next_entry == 0 | next_entry == 1){
-            //printf("Current entry: %d, Next entry: %d, 0x%03X\n", current_entry, next_entry, next_entry);
-            //printf("Unused Entry.\n");
-            break;
+        // if the next entry is the last one, write the remaining bytes and return
+        if (next_entry >= 0xFF8 & next_entry != 0 & next_entry != 1){
+            fseek(img_file, (FIXED_OFFSET + current_entry) * SECTOR_SIZE , SEEK_SET);
+            fread(buffer, sizeof(char), rem, img_file);
+            fwrite(buffer, sizeof(char), rem, new_file);
+            return;
         }
-
-        if (next_entry >= 0xFF8){
-            //printf("Current entry: %d, Next entry: %d, 0x%03X\n", current_entry, next_entry, next_entry);
-            //printf("End of file.\n");
-            break;
-        }
-
         // print current index , cluster in int and in 3 hex digits
         //printf("Current entry: %d, Next entry: %d, 0x%03X\n", current_entry, next_entry, next_entry);
 
-        current_entry = next_entry;
-
-        // seek , read and write (as above)
+        // write the current entry to the new file
         fseek(img_file, (FIXED_OFFSET + current_entry) * SECTOR_SIZE , SEEK_SET);
         fread(buffer, sizeof(char), SECTOR_SIZE, img_file);
         fwrite(buffer, sizeof(char), SECTOR_SIZE, new_file);
+
+        current_entry = next_entry;
 
     }
 
@@ -342,9 +334,13 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        // do the copy  
-        __le16 start_entry = get_file_entry(img_file, &boot_sector, argv[3]);
-        extract_file_from_fat12(img_file, &boot_sector, start_entry , argv[4]);
+        // get file info  
+        __le16 start_entry;
+        __le32 file_size;
+        get_file_info(img_file, &boot_sector, argv[3], &start_entry, &file_size);
+
+        // extract file from fat12
+        extract_file_from_fat12(img_file, &boot_sector, start_entry , argv[4] , file_size);
     }
     
     fclose(img_file);
