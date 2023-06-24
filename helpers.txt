@@ -22,4 +22,7 @@ tar -xzf hw4_208981159_312472129.tgz -C HW4
 
 cp -R org-xv6-public/. mod-xv6-public
 cp -R hw4_208981159_312472129/. mod-xv6-public 
-mv 
+
+
+tar -czf hw5_208981159_312472129.tgz  hw5_208981159_312472129 hw5_208981159_312472129.pdf
+tar -xzf hw5_208981159_312472129.tgz -C HW5
